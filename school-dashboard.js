@@ -2,27 +2,9 @@
 // School Dashboard JavaScript
 // ============================================
 
-// التحقق من إعدادات Supabase
-if (typeof CONFIG === 'undefined' || !CONFIG.SUPABASE || !CONFIG.SUPABASE.URL || 
-    CONFIG.SUPABASE.URL === 'YOUR_SUPABASE_URL_HERE' || 
-    !CONFIG.SUPABASE.ANON_KEY || 
-    CONFIG.SUPABASE.ANON_KEY === 'YOUR_SUPABASE_ANON_KEY_HERE') {
-    console.error('Supabase configuration is required');
-    document.body.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 2rem; font-family: 'Cairo', sans-serif;">
-            <div>
-                <h1>⚠️ إعدادات Supabase مطلوبة</h1>
-                <p>يرجى تحديث ملف config.js بإعدادات Supabase الخاصة بك</p>
-                <a href="config.js" style="color: white; text-decoration: underline; display: inline-block; margin-top: 1rem;">فتح config.js</a>
-            </div>
-        </div>
-    `;
-    throw new Error('Supabase configuration is required');
-}
-
 // تهيئة Supabase
-const supabaseUrl = CONFIG.SUPABASE.URL;
-const supabaseKey = CONFIG.SUPABASE.ANON_KEY;
+const supabaseUrl = CONFIG?.SUPABASE?.URL || 'https://vpvvjascwgivdjyyhzwp.supabase.co';
+const supabaseKey = CONFIG?.SUPABASE?.ANON_KEY || '';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // متغيرات عامة

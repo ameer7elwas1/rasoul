@@ -116,24 +116,8 @@
     <script src="../utils.js"></script>
     <script>
         // تهيئة Supabase
-        if (typeof CONFIG === 'undefined' || !CONFIG.SUPABASE || !CONFIG.SUPABASE.URL || CONFIG.SUPABASE.URL === 'YOUR_SUPABASE_URL_HERE') {
-            document.body.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 2rem; font-family: 'Cairo', sans-serif;">
-                    <div>
-                        <h1>⚠️ إعدادات Supabase مطلوبة</h1>
-                        <p>يرجى تحديث ملف config.js بإعدادات Supabase الخاصة بك</p>
-                        <p style="margin-top: 1rem;">1. افتح ملف config.js</p>
-                        <p>2. استبدل YOUR_SUPABASE_URL_HERE و YOUR_SUPABASE_ANON_KEY_HERE</p>
-                        <p>3. احفظ الملف وأعد تحميل الصفحة</p>
-                        <a href="config.js" style="color: white; text-decoration: underline; display: inline-block; margin-top: 1rem;">فتح config.js</a>
-                    </div>
-                </div>
-            `;
-            throw new Error('Supabase configuration is required');
-        }
-        
-        const supabaseUrl = CONFIG.SUPABASE.URL;
-        const supabaseKey = CONFIG.SUPABASE.ANON_KEY;
+        const supabaseUrl = CONFIG?.SUPABASE?.URL || 'https://vpvvjascwgivdjyyhzwp.supabase.co';
+        const supabaseKey = CONFIG?.SUPABASE?.ANON_KEY || '';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // متغيرات عامة
