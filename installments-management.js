@@ -429,7 +429,23 @@ async function submitStudent() {
         const result = await addStudent(studentData);
 
         if (result.success) {
-            showAlert('تم إضافة الطالب بنجاح', 'success');
+            let successMessage = 'تم إضافة الطالب بنجاح';
+            
+            // إضافة رسالة عن اكتشاف الإخوة تلقائياً
+            if (result.siblingsInfo && result.siblingsInfo.length > 0) {
+                const siblingsDetails = result.siblingsInfo.map(s => {
+                    return `${s.name} (${s.school})`;
+                }).join('، ');
+                
+                successMessage += `\n\nتم اكتشاف ${result.siblingsInfo.length} أخ/أخت في المدارس والروضات:`;
+                successMessage += `\n${siblingsDetails}`;
+                
+                if (result.discountApplied) {
+                    successMessage += `\n\nتم تطبيق خصم ${result.discountPercentage}% تلقائياً بسبب وجود ${result.siblingCount} إخوة`;
+                }
+            }
+            
+            showAlert(successMessage, 'success');
             
             // إغلاق النموذج
             const modal = bootstrap.Modal.getInstance(document.getElementById('addStudentModal'));

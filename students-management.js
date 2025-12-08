@@ -35,12 +35,54 @@ async function addStudent(studentData) {
             return { success: false, error: 'المدرسة مطلوبة' };
         }
         
+        // اكتشاف الإخوة تلقائياً: البحث في جميع المدارس والروضات
+        let detectedSiblingCount = 1; // الطالب نفسه
+        let detectedSiblings = [];
+        
+        try {
+            // البحث عن إخوة في جميع المدارس والروضات بناءً على اسم ولي الأمر واسم الأم
+            const { data: siblings, error: siblingsError } = await supabase
+                .from('students')
+                .select(`
+                    id, 
+                    name, 
+                    grade, 
+                    school_id,
+                    schools (
+                        id,
+                        name
+                    )
+                `)
+                .eq('guardian_name', studentData.guardian_name.trim())
+                .eq('mother_name', studentData.mother_name.trim())
+                .neq('school_id', studentData.school_id) // استبعاد المدرسة الحالية (لأن الطالب الجديد سيسجل فيها)
+                .eq('is_active', true);
+            
+            if (!siblingsError && siblings && siblings.length > 0) {
+                detectedSiblings = siblings;
+                detectedSiblingCount = siblings.length + 1; // الإخوة + الطالب الجديد
+                console.log(`تم اكتشاف ${siblings.length} أخ/أخت في المدارس والروضات للطالب الجديد`);
+            }
+        } catch (error) {
+            console.error('خطأ في البحث عن الإخوة:', error);
+            // نتابع بدون اكتشاف الإخوة في حالة الخطأ
+        }
+        
+        // استخدام عدد الإخوة المكتشف تلقائياً إذا لم يتم تحديده يدوياً
+        let finalSiblingCount = parseInt(studentData.sibling_count || detectedSiblingCount);
+        
+        // إذا تم اكتشاف إخوة تلقائياً وكان العدد المكتشف أكبر من المحدد يدوياً، نستخدم المكتشف
+        if (detectedSiblingCount > finalSiblingCount) {
+            finalSiblingCount = detectedSiblingCount;
+        }
+        
         // حساب الخصم بناءً على عدد الإخوة
+        // 2 إخوة (الطالب + أخ واحد) = 5%
+        // 3 إخوة أو أكثر (الطالب + 2 أخوة أو أكثر) = 10%
         let discountRate = 0;
-        const siblingCount = parseInt(studentData.sibling_count || 1);
-        if (siblingCount >= 3) {
+        if (finalSiblingCount >= 3) {
             discountRate = CONFIG.DISCOUNTS.SIBLING_3_PLUS; // 10%
-        } else if (siblingCount === 2) {
+        } else if (finalSiblingCount === 2) {
             discountRate = CONFIG.DISCOUNTS.SIBLING_2; // 5%
         }
 
@@ -81,7 +123,7 @@ async function addStudent(studentData) {
             final_fee: finalFee,
             discount_amount: discountAmount,
             discount_percentage: discountRate * 100,
-            has_sibling: siblingCount > 1,
+            has_sibling: finalSiblingCount > 1,
             installments: installments,
             registration_date: studentData.registration_date || new Date().toISOString().split('T')[0],
             is_active: true,
@@ -115,7 +157,30 @@ async function addStudent(studentData) {
             throw error;
         }
 
-        return { success: true, data };
+        // إضافة معلومات الإخوة المكتشفين إلى النتيجة
+        const result = { success: true, data };
+        if (detectedSiblings.length > 0) {
+            result.detectedSiblings = detectedSiblings;
+            result.siblingCount = finalSiblingCount;
+            result.discountApplied = discountRate > 0;
+            result.discountPercentage = discountRate * 100;
+            
+            // تجميع معلومات المدارس للإخوة المكتشفين
+            const siblingsInfo = detectedSiblings.map(sibling => {
+                const schoolName = sibling.schools?.name || sibling.school_id || 'مدرسة غير معروفة';
+                return {
+                    name: sibling.name,
+                    grade: sibling.grade,
+                    school: schoolName,
+                    schoolId: sibling.school_id
+                };
+            });
+            result.siblingsInfo = siblingsInfo;
+            
+            console.log(`تم تطبيق خصم ${discountRate * 100}% بسبب اكتشاف ${detectedSiblings.length} أخ/أخت في المدارس والروضات`);
+        }
+
+        return result;
     } catch (error) {
         console.error('خطأ في إضافة الطالب:', error);
         const errorMessage = error.message || 'حدث خطأ غير معروف';
@@ -318,7 +383,13 @@ async function sendWhatsAppReminder(studentId, message = null) {
         const currentUser = getCurrentUser();
         const { data: student, error } = await supabase
             .from('students')
-            .select('*')
+            .select(`
+                *,
+                schools (
+                    id,
+                    name
+                )
+            `)
             .eq('id', studentId)
             .single();
 
@@ -331,6 +402,28 @@ async function sendWhatsAppReminder(studentId, message = null) {
         // حساب حالة الطالب
         const status = calculateStudentStatus(student);
         
+        // الحصول على اسم المدرسة
+        let schoolName = 'المدرسة';
+        if (student.school_id) {
+            if (student.schools && student.schools.name) {
+                schoolName = student.schools.name;
+            } else {
+                // محاولة جلب اسم المدرسة من قاعدة البيانات كبديل
+                try {
+                    const { data: schoolData } = await supabase
+                        .from('schools')
+                        .select('name')
+                        .eq('id', student.school_id)
+                        .single();
+                    if (schoolData && schoolData.name) {
+                        schoolName = schoolData.name;
+                    }
+                } catch (err) {
+                    console.error('خطأ في جلب اسم المدرسة:', err);
+                }
+            }
+        }
+        
         // إنشاء رسالة افتراضية إذا لم يتم توفيرها
         if (!message) {
             const unpaidInstallments = student.installments.filter(inst => 
@@ -341,7 +434,7 @@ async function sendWhatsAppReminder(studentId, message = null) {
                 const nextInstallment = unpaidInstallments[0];
                 message = `مرحباً ${student.guardian_name}،
                 
-هذا تذكير بدفع أقساط الطالب ${student.name} في ${student.school_id ? SCHOOLS[student.school_id]?.name : 'المدرسة'}.
+هذا تذكير بدفع أقساط الطالب ${student.name} في ${schoolName}.
 
 الدفعة القادمة: الدفعة ${nextInstallment.installment_number}
 المبلغ: ${Utils.formatCurrency(nextInstallment.amount)}
