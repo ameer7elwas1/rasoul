@@ -592,6 +592,23 @@ BEGIN
     END IF;
 END $$;
 
+-- جدول الفئات (Categories)
+CREATE TABLE IF NOT EXISTS categories (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL CHECK (LENGTH(TRIM(name)) >= 1),
+    name_ar TEXT NOT NULL CHECK (LENGTH(TRIM(name_ar)) >= 1),
+    icon TEXT DEFAULT 'tv',
+    color TEXT DEFAULT '#2196F3',
+    sort_order INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes للفئات
+CREATE INDEX IF NOT EXISTS idx_categories_is_active ON categories(is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_categories_sort_order ON categories(sort_order);
+
 -- ============================================
 -- INDEXES
 -- ============================================
