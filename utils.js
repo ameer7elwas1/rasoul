@@ -104,6 +104,71 @@ const Utils = {
         return password.length >= 6;
     },
 
+    // تنظيف رقم الهاتف (إزالة المسافات والأحرف غير الضرورية)
+    cleanPhone: function(phone) {
+        if (!phone || typeof phone !== 'string') return null;
+        
+        // إزالة جميع المسافات والأحرف غير الرقمية باستثناء + في البداية
+        let cleaned = phone.trim();
+        
+        // إزالة المسافات
+        cleaned = cleaned.replace(/\s/g, '');
+        
+        // إزالة الأقواس
+        cleaned = cleaned.replace(/[()]/g, '');
+        
+        // إزالة الشرطات
+        cleaned = cleaned.replace(/-/g, '');
+        
+        // إذا كان فارغاً بعد التنظيف
+        if (!cleaned) return null;
+        
+        // إذا كان يبدأ بـ +، نتركه كما هو
+        if (cleaned.startsWith('+')) {
+            return cleaned;
+        }
+        
+        // إذا كان يبدأ بـ 00، نستبدله بـ +
+        if (cleaned.startsWith('00')) {
+            return '+' + cleaned.substring(2);
+        }
+        
+        // إذا كان يبدأ بـ 0، نستبدله بـ 964 (كود العراق)
+        if (cleaned.startsWith('0')) {
+            return '964' + cleaned.substring(1);
+        }
+        
+        // إذا كان يبدأ بـ 964، نضيف + في البداية
+        if (cleaned.startsWith('964')) {
+            return '+' + cleaned;
+        }
+        
+        // إذا كان رقم عادي بدون كود دولة، نضيف 964
+        // لكن فقط إذا كان طوله مناسب (عادة 9-10 أرقام للعراق)
+        if (/^\d{9,10}$/.test(cleaned)) {
+            return '964' + cleaned;
+        }
+        
+        // في حالة أخرى، نعيد الرقم كما هو
+        return cleaned;
+    },
+
+    // بناء رابط واتساب
+    buildWhatsAppURL: function(phone, message = '') {
+        if (!phone) return null;
+        // تنظيف رقم الهاتف
+        const cleanedPhone = this.cleanPhone(phone);
+        if (!cleanedPhone) return null;
+        
+        // تنسيق الرسالة
+        const encodedMessage = encodeURIComponent(message || '');
+        
+        // بناء رابط واتساب
+        // تنسيق: https://wa.me/964XXXXXXXXXX?text=message
+        // أو: https://api.whatsapp.com/send?phone=964XXXXXXXXXX&text=message
+        return `https://wa.me/${cleanedPhone}${encodedMessage ? '?text=' + encodedMessage : ''}`;
+    },
+
     // نسخ إلى الحافظة
     copyToClipboard: function(text) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
