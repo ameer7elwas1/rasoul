@@ -330,6 +330,8 @@ CREATE TABLE IF NOT EXISTS students (
 
 -- إضافة الأعمدة المفقودة في جدول students إذا كان الجدول موجوداً مسبقاً
 DO $$
+DECLARE
+    rec RECORD;
 BEGIN
     -- إضافة عمود guardian_name إذا لم يكن موجوداً
     IF NOT EXISTS (
