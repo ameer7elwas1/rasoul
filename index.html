@@ -169,10 +169,16 @@
         // تسجيل الدخول
         async function login(username, password) {
             try {
-                // البحث عن المستخدم
+                // البحث عن المستخدم مع معلومات المدرسة
                 const { data: users, error: fetchError } = await supabase
                     .from('users')
-                    .select('*')
+                    .select(`
+                        *,
+                        schools (
+                            id,
+                            name
+                        )
+                    `)
                     .eq('username', username.toLowerCase().trim())
                     .eq('is_active', true)
                     .single();
@@ -226,7 +232,7 @@
                     role: users.role,
                     is_admin: users.is_admin,
                     school_id: users.school_id,
-                    school_name: users.school_id ? SCHOOLS[users.school_id]?.name : null
+                    school_name: users.schools?.name || null
                 };
 
                 localStorage.setItem('user', JSON.stringify(userData));
