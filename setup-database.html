@@ -151,7 +151,13 @@
     <script>
         // تهيئة Supabase
         const supabaseUrl = CONFIG?.SUPABASE?.URL || 'https://vpvvjascwgivdjyyhzwp.supabase.co';
-        const supabaseKey = CONFIG?.SUPABASE?.ANON_KEY || '';
+        const supabaseKey = CONFIG?.SUPABASE?.ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwdnZqYXNjd2dpdmRqeXloendwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4MDYxMjYsImV4cCI6MjA2NTM4MjEyNn0.6AR2-MG4x9ugNTXe9jUqx-IwGEtj1m6MCYwQkTsSbUQ';
+        
+        if (!supabaseKey) {
+            console.error('خطأ: ANON_KEY غير موجود في config.js');
+            addLog('✗ خطأ: ANON_KEY غير موجود في config.js', 'error');
+        }
+        
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // إضافة سجل
@@ -235,20 +241,24 @@
             addLog('جاري إنشاء حساب رئيس مجلس الإدارة...', 'info');
             try {
                 // استخدام RPC لتشفير كلمة المرور
-                const { data, error } = await supabase.rpc('hash_password', {
+                let passwordHash = 'master123'; // Fallback
+                const { data: hashedPassword, error: hashError } = await supabase.rpc('hash_password', {
                     password: 'master123'
                 });
 
-                if (error) {
-                    // إذا لم تكن الدالة موجودة، استخدم طريقة بديلة
-                    addLog('ملاحظة: استخدام طريقة بديلة لتشفير كلمة المرور', 'info');
+                if (!hashError && hashedPassword) {
+                    passwordHash = hashedPassword;
+                    addLog('✓ تم تشفير كلمة المرور بنجاح', 'success');
+                } else {
+                    addLog('⚠️ ملاحظة: استخدام كلمة مرور غير مشفرة (يجب تشفيرها لاحقاً في قاعدة البيانات)', 'info');
+                    addLog('  يمكنك استخدام: UPDATE users SET password_hash = crypt(\'master123\', gen_salt(\'bf\', 10)) WHERE username = \'admin\';', 'info');
                 }
 
                 const { error: insertError } = await supabase
                     .from('users')
                     .upsert({
                         username: 'admin',
-                        password_hash: 'master123', // سيتم تشفيرها لاحقاً في Supabase
+                        password_hash: passwordHash,
                         role: 'admin',
                         full_name: 'رئيس مجلس الإدارة',
                         is_admin: true,
@@ -260,7 +270,10 @@
                 addLog('✓ تم إنشاء حساب رئيس مجلس الإدارة', 'success');
                 addLog('  اسم المستخدم: admin', 'info');
                 addLog('  كلمة المرور: master123', 'info');
-                showResult('step2', true, 'تم إنشاء حساب الرئيس بنجاح');
+                if (hashError) {
+                    addLog('  ⚠️ يجب تشفير كلمة المرور في قاعدة البيانات', 'info');
+                }
+                showResult('step2', true, 'تم إنشاء حساب الرئيس بنجاح' + (hashError ? ' (يجب تشفير كلمة المرور)' : ''));
             } catch (error) {
                 addLog('✗ خطأ: ' + error.message, 'error');
                 showResult('step2', false, 'خطأ: ' + error.message);
@@ -279,12 +292,25 @@
                     { username: 'thanawiya', password: 'thanawiya123', school_id: 'thanawiya', name: 'مدير ثانوية رسول الرحمة' }
                 ];
 
+                let hasHashError = false;
                 for (const user of users) {
+                    // محاولة تشفير كلمة المرور
+                    let passwordHash = user.password; // Fallback
+                    const { data: hashedPassword, error: hashError } = await supabase.rpc('hash_password', {
+                        password: user.password
+                    });
+
+                    if (!hashError && hashedPassword) {
+                        passwordHash = hashedPassword;
+                    } else {
+                        hasHashError = true;
+                    }
+
                     const { error } = await supabase
                         .from('users')
                         .upsert({
                             username: user.username,
-                            password_hash: user.password, // سيتم تشفيرها لاحقاً
+                            password_hash: passwordHash,
                             school_id: user.school_id,
                             role: 'school_admin',
                             full_name: user.name,
@@ -296,7 +322,11 @@
                     addLog(`✓ تم إنشاء حساب ${user.username}`, 'success');
                 }
 
-                showResult('step3', true, 'تم إنشاء جميع حسابات المدارس بنجاح');
+                if (hasHashError) {
+                    addLog('⚠️ ملاحظة: بعض كلمات المرور غير مشفرة (يجب تشفيرها لاحقاً)', 'info');
+                }
+
+                showResult('step3', true, 'تم إنشاء جميع حسابات المدارس بنجاح' + (hasHashError ? ' (يجب تشفير كلمات المرور)' : ''));
             } catch (error) {
                 addLog('✗ خطأ: ' + error.message, 'error');
                 showResult('step3', false, 'خطأ: ' + error.message);

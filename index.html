@@ -117,7 +117,13 @@
     <script>
         // تهيئة Supabase
         const supabaseUrl = CONFIG?.SUPABASE?.URL || 'https://vpvvjascwgivdjyyhzwp.supabase.co';
-        const supabaseKey = CONFIG?.SUPABASE?.ANON_KEY || '';
+        const supabaseKey = CONFIG?.SUPABASE?.ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwdnZqYXNjd2dpdmRqeXloendwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4MDYxMjYsImV4cCI6MjA2NTM4MjEyNn0.6AR2-MG4x9ugNTXe9jUqx-IwGEtj1m6MCYwQkTsSbUQ';
+        
+        if (!supabaseKey) {
+            console.error('خطأ: ANON_KEY غير موجود في config.js');
+            alert('خطأ في الإعدادات: يرجى التحقق من ملف config.js');
+        }
+        
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // متغيرات عامة
