@@ -175,6 +175,9 @@ BEGIN
         AND column_name = 'role'
         AND udt_name != 'user_role'
     ) THEN
+        -- حذف الـ Views التي تعتمد على عمود role أولاً
+        DROP VIEW IF EXISTS users_statistics CASCADE;
+        
         -- حذف constraint إذا كان موجوداً
         FOR rec IN 
             SELECT constraint_name 
@@ -190,7 +193,7 @@ BEGIN
         SELECT id, role::text as old_role FROM users WHERE role IS NOT NULL;
         
         -- حذف العمود القديم
-        ALTER TABLE users DROP COLUMN IF EXISTS role;
+        ALTER TABLE users DROP COLUMN IF EXISTS role CASCADE;
         
         -- إضافة العمود الجديد من نوع user_role
         ALTER TABLE users ADD COLUMN role user_role DEFAULT 'user';
