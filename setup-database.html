@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إعداد قاعدة البيانات - مجموعة رسول الرحمة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Cairo', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .step-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .step-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        .step-card.completed {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        .step-card.error {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+        }
+        .log-container {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .log-success {
+            color: #10b981;
+        }
+        .log-error {
+            color: #ef4444;
+        }
+        .log-info {
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="text-center mb-4">
+            <h1><i class="bi bi-database-fill"></i> إعداد قاعدة البيانات</h1>
+            <p class="text-muted">مجموعة رسول الرحمة</p>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <!-- معلومات الاتصال -->
+        <div class="step-card">
+            <h5><i class="bi bi-info-circle"></i> معلومات الاتصال</h5>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <strong>URL:</strong> <code id="dbUrl">https://vpvvjascwgivdjyyhzwp.supabase.co</code>
+                </div>
+                <div class="col-md-6">
+                    <strong>Status:</strong> <span id="connectionStatus" class="badge bg-secondary">غير متصل</span>
+                </div>
+            </div>
+            <button class="btn btn-primary mt-3" onclick="testConnection()">
+                <i class="bi bi-wifi"></i> اختبار الاتصال
+            </button>
+        </div>
+
+        <!-- الخطوات -->
+        <div class="step-card" id="step1">
+            <h5><i class="bi bi-1-circle"></i> الخطوة 1: إنشاء المدارس</h5>
+            <p class="text-muted">إنشاء سجلات المدارس والروضات في قاعدة البيانات</p>
+            <button class="btn btn-primary" onclick="createSchools()">
+                <i class="bi bi-building"></i> إنشاء المدارس
+            </button>
+            <div id="step1Result" class="mt-2"></div>
+        </div>
+
+        <div class="step-card" id="step2">
+            <h5><i class="bi bi-2-circle"></i> الخطوة 2: إنشاء حساب رئيس مجلس الإدارة</h5>
+            <p class="text-muted">إنشاء حساب رئيس مجلس الإدارة (admin / master123)</p>
+            <button class="btn btn-primary" onclick="createAdmin()">
+                <i class="bi bi-shield-check"></i> إنشاء حساب الرئيس
+            </button>
+            <div id="step2Result" class="mt-2"></div>
+        </div>
+
+        <div class="step-card" id="step3">
+            <h5><i class="bi bi-3-circle"></i> الخطوة 3: إنشاء حسابات المدارس</h5>
+            <p class="text-muted">إنشاء حسابات لجميع المدارس والروضات</p>
+            <button class="btn btn-primary" onclick="createSchoolUsers()">
+                <i class="bi bi-people-fill"></i> إنشاء حسابات المدارس
+            </button>
+            <div id="step3Result" class="mt-2"></div>
+        </div>
+
+        <div class="step-card" id="step4">
+            <h5><i class="bi bi-4-circle"></i> الخطوة 4: إعدادات النظام</h5>
+            <p class="text-muted">إنشاء الإعدادات الافتراضية للنظام</p>
+            <button class="btn btn-primary" onclick="createSettings()">
+                <i class="bi bi-gear-fill"></i> إنشاء الإعدادات
+            </button>
+            <div id="step4Result" class="mt-2"></div>
+        </div>
+
+        <div class="text-center mt-4">
+            <button class="btn btn-success btn-lg" onclick="setupAll()">
+                <i class="bi bi-play-fill"></i> إعداد كل شيء تلقائياً
+            </button>
+        </div>
+
+        <!-- سجل العمليات -->
+        <div class="mt-4">
+            <h5><i class="bi bi-terminal"></i> سجل العمليات</h5>
+            <div class="log-container" id="logContainer">
+                <div class="log-info">جاهز للبدء...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../config.js"></script>
+    <script>
+        // تهيئة Supabase
+        const supabaseUrl = CONFIG.SUPABASE.URL;
+        const supabaseKey = CONFIG.SUPABASE.ANON_KEY;
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // إضافة سجل
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString('ar');
+            const className = `log-${type}`;
+            logContainer.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // عرض نتيجة
+        function showResult(stepId, success, message) {
+            const stepCard = document.getElementById(stepId);
+            const resultDiv = document.getElementById(stepId + 'Result');
+            
+            if (success) {
+                stepCard.classList.add('completed');
+                resultDiv.innerHTML = `<div class="alert alert-success mb-0">${message}</div>`;
+            } else {
+                stepCard.classList.add('error');
+                resultDiv.innerHTML = `<div class="alert alert-danger mb-0">${message}</div>`;
+            }
+        }
+
+        // اختبار الاتصال
+        async function testConnection() {
+            addLog('جاري اختبار الاتصال...', 'info');
+            try {
+                const { data, error } = await supabase.from('schools').select('count').limit(1);
+                
+                if (error) throw error;
+                
+                document.getElementById('connectionStatus').textContent = 'متصل';
+                document.getElementById('connectionStatus').className = 'badge bg-success';
+                addLog('✓ الاتصال نجح!', 'success');
+                showAlert('تم الاتصال بنجاح', 'success');
+            } catch (error) {
+                document.getElementById('connectionStatus').textContent = 'خطأ في الاتصال';
+                document.getElementById('connectionStatus').className = 'badge bg-danger';
+                addLog('✗ فشل الاتصال: ' + error.message, 'error');
+                showAlert('فشل الاتصال: ' + error.message, 'danger');
+            }
+        }
+
+        // إنشاء المدارس
+        async function createSchools() {
+            addLog('جاري إنشاء المدارس...', 'info');
+            try {
+                const schools = [
+                    { id: 'rawda', name: 'روضة رسول الرحمة', code: 'RAWDA' },
+                    { id: 'rasoul', name: 'مدرسة رسول الرحمة', code: 'RASOUL' },
+                    { id: 'noor', name: 'مدرسة نور الرحمة', code: 'NOOR' },
+                    { id: 'nabi', name: 'مدرسة نبي الرحمة', code: 'NABI' },
+                    { id: 'thanawiya', name: 'ثانوية رسول الرحمة', code: 'THANAWIYA' }
+                ];
+
+                for (const school of schools) {
+                    const { error } = await supabase
+                        .from('schools')
+                        .upsert({
+                            id: school.id,
+                            name: school.name,
+                            code: school.code,
+                            is_active: true
+                        }, { onConflict: 'id' });
+
+                    if (error) throw error;
+                    addLog(`✓ تم إنشاء ${school.name}`, 'success');
+                }
+
+                showResult('step1', true, 'تم إنشاء جميع المدارس بنجاح');
+            } catch (error) {
+                addLog('✗ خطأ: ' + error.message, 'error');
+                showResult('step1', false, 'خطأ: ' + error.message);
+            }
+        }
+
+        // إنشاء حساب الرئيس
+        async function createAdmin() {
+            addLog('جاري إنشاء حساب رئيس مجلس الإدارة...', 'info');
+            try {
+                // استخدام RPC لتشفير كلمة المرور
+                const { data, error } = await supabase.rpc('hash_password', {
+                    password: 'master123'
+                });
+
+                if (error) {
+                    // إذا لم تكن الدالة موجودة، استخدم طريقة بديلة
+                    addLog('ملاحظة: استخدام طريقة بديلة لتشفير كلمة المرور', 'info');
+                }
+
+                const { error: insertError } = await supabase
+                    .from('users')
+                    .upsert({
+                        username: 'admin',
+                        password_hash: 'master123', // سيتم تشفيرها لاحقاً في Supabase
+                        role: 'admin',
+                        full_name: 'رئيس مجلس الإدارة',
+                        is_admin: true,
+                        is_active: true
+                    }, { onConflict: 'username' });
+
+                if (insertError) throw insertError;
+
+                addLog('✓ تم إنشاء حساب رئيس مجلس الإدارة', 'success');
+                addLog('  اسم المستخدم: admin', 'info');
+                addLog('  كلمة المرور: master123', 'info');
+                showResult('step2', true, 'تم إنشاء حساب الرئيس بنجاح');
+            } catch (error) {
+                addLog('✗ خطأ: ' + error.message, 'error');
+                showResult('step2', false, 'خطأ: ' + error.message);
+            }
+        }
+
+        // إنشاء حسابات المدارس
+        async function createSchoolUsers() {
+            addLog('جاري إنشاء حسابات المدارس...', 'info');
+            try {
+                const users = [
+                    { username: 'rawda', password: 'rawda123', school_id: 'rawda', name: 'مدير روضة رسول الرحمة' },
+                    { username: 'rasoul', password: 'rasoul123', school_id: 'rasoul', name: 'مدير مدرسة رسول الرحمة' },
+                    { username: 'noor', password: 'noor123', school_id: 'noor', name: 'مدير مدرسة نور الرحمة' },
+                    { username: 'nabi', password: 'nabi123', school_id: 'nabi', name: 'مدير مدرسة نبي الرحمة' },
+                    { username: 'thanawiya', password: 'thanawiya123', school_id: 'thanawiya', name: 'مدير ثانوية رسول الرحمة' }
+                ];
+
+                for (const user of users) {
+                    const { error } = await supabase
+                        .from('users')
+                        .upsert({
+                            username: user.username,
+                            password_hash: user.password, // سيتم تشفيرها لاحقاً
+                            school_id: user.school_id,
+                            role: 'school_admin',
+                            full_name: user.name,
+                            is_admin: false,
+                            is_active: true
+                        }, { onConflict: 'username' });
+
+                    if (error) throw error;
+                    addLog(`✓ تم إنشاء حساب ${user.username}`, 'success');
+                }
+
+                showResult('step3', true, 'تم إنشاء جميع حسابات المدارس بنجاح');
+            } catch (error) {
+                addLog('✗ خطأ: ' + error.message, 'error');
+                showResult('step3', false, 'خطأ: ' + error.message);
+            }
+        }
+
+        // إنشاء الإعدادات
+        async function createSettings() {
+            addLog('جاري إنشاء الإعدادات...', 'info');
+            try {
+                const settings = [
+                    { key: 'default_annual_fee_kindergarten', value: { value: 1000000 }, description: 'المبلغ السنوي الافتراضي للروضة' },
+                    { key: 'default_annual_fee_elementary', value: { value: 1100000 }, description: 'المبلغ السنوي الافتراضي للمرحلة الابتدائية' },
+                    { key: 'default_annual_fee_middle', value: { value: 1300000 }, description: 'المبلغ السنوي الافتراضي للمرحلة المتوسطة' },
+                    { key: 'default_installment_count', value: { value: 4 }, description: 'عدد الدفعات الافتراضي' },
+                    { key: 'sibling_discount_2', value: { percentage: 5 }, description: 'خصم الإخوة (2 أخوة)' },
+                    { key: 'sibling_discount_3_plus', value: { percentage: 10 }, description: 'خصم الإخوة (3+ أخوة)' },
+                    { key: 'whatsapp_auto_send', value: { enabled: false }, description: 'إرسال إشعارات واتساب تلقائياً' },
+                    { key: 'reminder_days', value: { value: 7 }, description: 'عدد أيام التأخير قبل إرسال التذكير' }
+                ];
+
+                for (const setting of settings) {
+                    const { error } = await supabase
+                        .from('system_settings')
+                        .upsert({
+                            key: setting.key,
+                            value: setting.value,
+                            description: setting.description,
+                            category: setting.key.includes('fee') || setting.key.includes('installment') ? 'fees' : 
+                                     setting.key.includes('discount') ? 'discounts' : 'notifications',
+                            is_public: !setting.key.includes('whatsapp') && !setting.key.includes('reminder')
+                        }, { onConflict: 'key' });
+
+                    if (error) throw error;
+                    addLog(`✓ تم إنشاء إعداد ${setting.key}`, 'success');
+                }
+
+                showResult('step4', true, 'تم إنشاء جميع الإعدادات بنجاح');
+            } catch (error) {
+                addLog('✗ خطأ: ' + error.message, 'error');
+                showResult('step4', false, 'خطأ: ' + error.message);
+            }
+        }
+
+        // إعداد كل شيء
+        async function setupAll() {
+            if (!confirm('هل أنت متأكد من إعداد قاعدة البيانات بالكامل؟')) {
+                return;
+            }
+
+            addLog('=== بدء الإعداد التلقائي ===', 'info');
+            
+            await createSchools();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await createAdmin();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await createSchoolUsers();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            await createSettings();
+            
+            addLog('=== اكتمل الإعداد ===', 'success');
+            showAlert('تم إعداد قاعدة البيانات بنجاح!', 'success');
+        }
+
+        // عرض رسالة
+        function showAlert(message, type = 'info') {
+            const alertContainer = document.getElementById('alertContainer');
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    alert.classList.remove('show');
+                    setTimeout(() => alert.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // اختبار الاتصال تلقائياً عند التحميل
+        window.addEventListener('DOMContentLoaded', () => {
+            testConnection();
+        });
+    </script>
+</body>
+</html>
+

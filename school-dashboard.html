@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المدرسة - مجموعة رسول الرحمة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Cairo', sans-serif;
+        }
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #3b82f6;
+        }
+        body {
+            background-color: #f5f7fa;
+        }
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .sidebar {
+            background: white;
+            min-height: calc(100vh - 56px);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 56px;
+        }
+        .sidebar-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #333;
+            text-decoration: none;
+            display: block;
+        }
+        .sidebar-item:hover, .sidebar-item.active {
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, transparent 100%);
+            color: var(--primary-color);
+            border-right: 3px solid var(--primary-color);
+        }
+        .sidebar-item i {
+            width: 25px;
+            margin-left: 10px;
+        }
+        .main-content {
+            padding: 30px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .stat-card .icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            margin-bottom: 15px;
+        }
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+            margin: 10px 0;
+        }
+        .stat-card .label {
+            color: #666;
+            font-size: 14px;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+        }
+        .table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="bi bi-mortarboard-fill"></i> <span id="schoolName">المدرسة</span>
+            </span>
+            <div class="d-flex align-items-center">
+                <div class="position-relative me-3">
+                    <button class="btn btn-light btn-sm" onclick="showNotifications()">
+                        <i class="bi bi-bell-fill"></i>
+                        <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                    </button>
+                </div>
+                <div class="position-relative me-3">
+                    <button class="btn btn-light btn-sm" onclick="showMessages()">
+                        <i class="bi bi-chat-dots-fill"></i>
+                        <span class="notification-badge" id="messageBadge" style="display: none;">0</span>
+                    </button>
+                </div>
+                <span class="text-white me-3" id="userName">المستخدم</span>
+                <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                    <i class="bi bi-box-arrow-right"></i> خروج
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 p-0">
+                <div class="sidebar">
+                    <a href="#" class="sidebar-item active" onclick="showSection('dashboard')">
+                        <i class="bi bi-speedometer2"></i> لوحة التحكم
+                    </a>
+                    <a href="#" class="sidebar-item" onclick="showSection('students')">
+                        <i class="bi bi-people-fill"></i> الطلاب
+                    </a>
+                    <a href="#" class="sidebar-item" onclick="showSection('installments')">
+                        <i class="bi bi-cash-coin"></i> الأقساط
+                    </a>
+                    <a href="#" class="sidebar-item" onclick="showSection('payments')">
+                        <i class="bi bi-receipt"></i> المدفوعات
+                    </a>
+                    <a href="#" class="sidebar-item" onclick="showSection('reports')">
+                        <i class="bi bi-graph-up"></i> التقارير
+                    </a>
+                    <a href="#" class="sidebar-item" onclick="showSection('settings')">
+                        <i class="bi bi-gear-fill"></i> الإعدادات
+                    </a>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-10">
+                <div class="main-content">
+                    <!-- Dashboard Section -->
+                    <div id="dashboard" class="content-section active">
+                        <h2 class="mb-4">لوحة التحكم</h2>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="icon" style="background: var(--info-color);">
+                                        <i class="bi bi-people-fill"></i>
+                                    </div>
+                                    <div class="value" id="totalStudents">0</div>
+                                    <div class="label">إجمالي الطلاب</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="icon" style="background: var(--success-color);">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                    </div>
+                                    <div class="value" id="paidStudents">0</div>
+                                    <div class="label">طلاب مدفوعين بالكامل</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="icon" style="background: var(--warning-color);">
+                                        <i class="bi bi-clock-history"></i>
+                                    </div>
+                                    <div class="value" id="partialStudents">0</div>
+                                    <div class="label">طلاب مدفوعين جزئياً</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="icon" style="background: var(--danger-color);">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    </div>
+                                    <div class="value" id="unpaidStudents">0</div>
+                                    <div class="label">طلاب غير مدفوعين</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="stat-card">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5>إجمالي الأقساط</h5>
+                                    </div>
+                                    <div class="value text-primary" id="totalFees">0 د.ع</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="stat-card">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5>المتبقي</h5>
+                                    </div>
+                                    <div class="value text-danger" id="remainingFees">0 د.ع</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Students Section -->
+                    <div id="students" class="content-section">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2>الطلاب</h2>
+                            <button class="btn btn-primary" onclick="showAddStudentModal()">
+                                <i class="bi bi-plus-circle"></i> إضافة طالب
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>اسم الطالب</th>
+                                        <th>اسم ولي الأمر</th>
+                                        <th>الصف</th>
+                                        <th>الهاتف</th>
+                                        <th>المبلغ السنوي</th>
+                                        <th>الخصم</th>
+                                        <th>المبلغ النهائي</th>
+                                        <th>الحالة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentsTableBody">
+                                    <tr>
+                                        <td colspan="9" class="text-center">جاري التحميل...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Installments Section -->
+                    <div id="installments" class="content-section">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2>الأقساط</h2>
+                            <div>
+                                <select class="form-select d-inline-block" style="width: auto;" id="studentSelect" onchange="loadStudentInstallments()">
+                                    <option value="">اختر طالب لعرض أقساطه</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="installmentsContent">
+                            <p class="text-center text-muted">يرجى اختيار طالب لعرض أقساطه</p>
+                        </div>
+                    </div>
+
+                    <!-- Payments Section -->
+                    <div id="payments" class="content-section">
+                        <h2 class="mb-4">المدفوعات</h2>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>اسم الطالب</th>
+                                        <th>رقم الدفعة</th>
+                                        <th>المبلغ</th>
+                                        <th>تاريخ الدفع</th>
+                                        <th>طريقة الدفع</th>
+                                        <th>رقم الإيصال</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="paymentsTableBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center">جاري التحميل...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Reports Section -->
+                    <div id="reports" class="content-section">
+                        <h2 class="mb-4">التقارير</h2>
+                        <div id="reportsContent">
+                            <!-- سيتم ملؤها ديناميكياً -->
+                        </div>
+                    </div>
+
+                    <!-- Settings Section -->
+                    <div id="settings" class="content-section">
+                        <h2 class="mb-4">الإعدادات</h2>
+                        <div id="settingsContent">
+                            <!-- سيتم ملؤها ديناميكياً -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals will be added here -->
+    <div id="modalsContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../config.js"></script>
+    <script src="../utils.js"></script>
+    <script src="students-management.js"></script>
+    <script src="installments-management.js"></script>
+    <script src="messages-system.js"></script>
+    <script src="notifications-system.js"></script>
+    <script src="settings-page.js"></script>
+    <script src="school-dashboard.js"></script>
+</body>
+</html>
+

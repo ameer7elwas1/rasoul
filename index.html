@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة الأقساط - مجموعة رسول الرحمة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Cairo', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            max-width: 450px;
+            width: 100%;
+        }
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .login-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .login-header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+        }
+        .login-body {
+            padding: 40px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            padding: 12px 15px;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            color: white;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        .loading {
+            display: none;
+        }
+        .loading.show {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1><i class="bi bi-mortarboard-fill"></i> مجموعة رسول الرحمة</h1>
+            <p>نظام إدارة الأقساط</p>
+        </div>
+        <div class="login-body">
+            <div id="alertContainer"></div>
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="username" class="form-label">اسم المستخدم</label>
+                    <input type="text" class="form-control" id="username" required autocomplete="username">
+                </div>
+                <div class="mb-4">
+                    <label for="password" class="form-label">كلمة المرور</label>
+                    <input type="password" class="form-control" id="password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-login">
+                    <span class="loading spinner-border spinner-border-sm me-2" role="status"></span>
+                    تسجيل الدخول
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../config.js"></script>
+    <script src="../utils.js"></script>
+    <script>
+        // تهيئة Supabase
+        const supabaseUrl = CONFIG.SUPABASE.URL;
+        const supabaseKey = CONFIG.SUPABASE.ANON_KEY;
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // متغيرات عامة
+        let loginAttempts = 0;
+        const maxAttempts = CONFIG.SECURITY.MAX_LOGIN_ATTEMPTS;
+
+        // عرض رسالة
+        function showAlert(message, type = 'danger') {
+            const alertContainer = document.getElementById('alertContainer');
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    alert.classList.remove('show');
+                    setTimeout(() => alert.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // تشفير كلمة المرور (bcrypt simulation - في الإنتاج يجب استخدام Supabase Auth)
+        async function hashPassword(password) {
+            // في الإنتاج، استخدم Supabase Auth أو bcrypt على الخادم
+            // هنا نستخدم طريقة بسيطة للتحقق
+            return password; // للاختبار فقط
+        }
+
+        // التحقق من كلمة المرور
+        async function verifyPassword(password, hash) {
+            // في الإنتاج، استخدم Supabase Auth أو verify_password function من PostgreSQL
+            // هنا نستخدم طريقة بسيطة للتحقق
+            const response = await supabase.rpc('verify_password', {
+                password: password,
+                hash: hash
+            });
+            
+            if (response.error) {
+                // Fallback: مقارنة مباشرة (للتطوير فقط)
+                return password === hash;
+            }
+            
+            return response.data;
+        }
+
+        // تسجيل الدخول
+        async function login(username, password) {
+            try {
+                // البحث عن المستخدم
+                const { data: users, error: fetchError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('username', username.toLowerCase().trim())
+                    .eq('is_active', true)
+                    .single();
+
+                if (fetchError || !users) {
+                    loginAttempts++;
+                    if (loginAttempts >= maxAttempts) {
+                        showAlert('تم تجاوز عدد محاولات الدخول المسموح بها. يرجى المحاولة لاحقاً.', 'danger');
+                        return false;
+                    }
+                    showAlert('اسم المستخدم أو كلمة المرور غير صحيحة', 'danger');
+                    return false;
+                }
+
+                // التحقق من كلمة المرور
+                const isValid = await verifyPassword(password, users.password_hash);
+                
+                if (!isValid) {
+                    loginAttempts++;
+                    if (loginAttempts >= maxAttempts) {
+                        showAlert('تم تجاوز عدد محاولات الدخول المسموح بها. يرجى المحاولة لاحقاً.', 'danger');
+                        return false;
+                    }
+                    showAlert('اسم المستخدم أو كلمة المرور غير صحيحة', 'danger');
+                    return false;
+                }
+
+                // التحقق من القفل
+                if (users.locked_until && new Date(users.locked_until) > new Date()) {
+                    const lockTime = Math.ceil((new Date(users.locked_until) - new Date()) / 60000);
+                    showAlert(`الحساب مقفل. يرجى المحاولة بعد ${lockTime} دقيقة`, 'warning');
+                    return false;
+                }
+
+                // تحديث معلومات تسجيل الدخول
+                await supabase
+                    .from('users')
+                    .update({
+                        last_login: new Date().toISOString(),
+                        login_count: (users.login_count || 0) + 1,
+                        failed_login_attempts: 0,
+                        locked_until: null
+                    })
+                    .eq('id', users.id);
+
+                // حفظ معلومات المستخدم في localStorage
+                const userData = {
+                    id: users.id,
+                    username: users.username,
+                    full_name: users.full_name,
+                    role: users.role,
+                    is_admin: users.is_admin,
+                    school_id: users.school_id,
+                    school_name: users.school_id ? SCHOOLS[users.school_id]?.name : null
+                };
+
+                localStorage.setItem('user', JSON.stringify(userData));
+                localStorage.setItem('loginTime', new Date().toISOString());
+
+                // إعادة تعيين محاولات الدخول
+                loginAttempts = 0;
+
+                // توجيه المستخدم
+                if (users.is_admin || users.role === 'admin') {
+                    window.location.href = 'admin-dashboard.html';
+                } else if (users.school_id) {
+                    window.location.href = `school-dashboard.html?school=${users.school_id}`;
+                } else {
+                    window.location.href = 'dashboard.html';
+                }
+
+                return true;
+            } catch (error) {
+                console.error('خطأ في تسجيل الدخول:', error);
+                showAlert('حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.', 'danger');
+                return false;
+            }
+        }
+
+        // معالج تسجيل الدخول
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const loading = submitBtn.querySelector('.loading');
+
+            if (!username || !password) {
+                showAlert('يرجى إدخال اسم المستخدم وكلمة المرور', 'warning');
+                return;
+            }
+
+            // عرض حالة التحميل
+            submitBtn.disabled = true;
+            loading.classList.add('show');
+
+            await login(username, password);
+
+            // إخفاء حالة التحميل
+            submitBtn.disabled = false;
+            loading.classList.remove('show');
+        });
+
+        // التحقق من الجلسة الحالية
+        window.addEventListener('DOMContentLoaded', () => {
+            const userData = localStorage.getItem('user');
+            const loginTime = localStorage.getItem('loginTime');
+            
+            if (userData && loginTime) {
+                const loginDate = new Date(loginTime);
+                const now = new Date();
+                const sessionTimeout = CONFIG.SECURITY.SESSION_TIMEOUT;
+                
+                if (now - loginDate < sessionTimeout) {
+                    const user = JSON.parse(userData);
+                    if (user.is_admin || user.role === 'admin') {
+                        window.location.href = 'admin-dashboard.html';
+                    } else if (user.school_id) {
+                        window.location.href = `school-dashboard.html?school=${user.school_id}`;
+                    }
+                } else {
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('loginTime');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

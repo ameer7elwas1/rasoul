@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم رئيس مجلس الإدارة - مجموعة رسول الرحمة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Cairo', sans-serif;
+        }
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #3b82f6;
+        }
+        body {
+            background-color: #f5f7fa;
+        }
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .sidebar {
+            background: white;
+            min-height: calc(100vh - 56px);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 56px;
+        }
+        .sidebar-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #333;
+            text-decoration: none;
+            display: block;
+        }
+        .sidebar-item:hover, .sidebar-item.active {
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, transparent 100%);
+            color: var(--primary-color);
+            border-right: 3px solid var(--primary-color);
+        }
+        .sidebar-item i {
+            width: 25px;
+            margin-left: 10px;
+        }
+        .main-content {
+            padding: 30px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .stat-card .icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            margin-bottom: 15px;
+        }
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+            margin: 10px 0;
+        }
+        .stat-card .label {
+            color: #666;
+            font-size: 14px;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .school-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .school-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .chat-container {
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+        .message.sent {
+            justify-content: flex-end;
+        }
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 15px;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .message.sent .message-content {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+        }
+        .message-input {
+            border-top: 1px solid #e0e0e0;
+            padding: 15px;
+            background: white;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="bi bi-shield-check"></i> رئيس مجلس الإدارة
+            </span>
+            <div class="d-flex align-items-center">
+                <span class="text-white me-3" id="userName">المستخدم</span>
+                <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                    <i class="bi bi-box-arrow-right"></i> خروج
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 p-0">
+                <div class="sidebar">
+                    <a href="#" class="sidebar-item active" onclick="showSection('dashboard')">
+                        <i class="bi bi-speedometer2"></i> لوحة التحكم
+                    </a>
+                    <a href="#" class="sidebar-item" onclick="showSection('schools')">
+                        <i class="bi bi-building"></i> المدارس
+                    </a>
+                    <a href="#" class="sidebar-item" onclick="showSection('students')">
+                        <i class="bi bi-people-fill"></i> جميع الطلاب
+                    </a>
+                    <a href="#" class="sidebar-item" onclick="showSection('messages')">
+                        <i class="bi bi-chat-dots-fill"></i> المحادثات
+                    </a>
+                    <a href="#" class="sidebar-item" onclick="showSection('notifications')">
+                        <i class="bi bi-bell-fill"></i> الإشعارات
+                    </a>
+                    <a href="#" class="sidebar-item" onclick="showSection('reports')">
+                        <i class="bi bi-graph-up"></i> التقارير
+                    </a>
+                    <a href="#" class="sidebar-item" onclick="showSection('users')">
+                        <i class="bi bi-people-fill"></i> إدارة المستخدمين
+                    </a>
+                    <a href="#" class="sidebar-item" onclick="showSection('settings')">
+                        <i class="bi bi-gear-fill"></i> الإعدادات
+                    </a>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-10">
+                <div class="main-content">
+                    <!-- Dashboard Section -->
+                    <div id="dashboard" class="content-section active">
+                        <h2 class="mb-4">لوحة التحكم</h2>
+                        <div class="row" id="schoolsStats">
+                            <!-- سيتم ملؤها ديناميكياً -->
+                        </div>
+                    </div>
+
+                    <!-- Schools Section -->
+                    <div id="schools" class="content-section">
+                        <h2 class="mb-4">المدارس والروضات</h2>
+                        <div id="schoolsList">
+                            <!-- سيتم ملؤها ديناميكياً -->
+                        </div>
+                    </div>
+
+                    <!-- Students Section -->
+                    <div id="students" class="content-section">
+                        <h2 class="mb-4">جميع الطلاب</h2>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>اسم الطالب</th>
+                                        <th>المدرسة</th>
+                                        <th>الصف</th>
+                                        <th>المبلغ السنوي</th>
+                                        <th>الحالة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="allStudentsTableBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center">جاري التحميل...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Messages Section -->
+                    <div id="messages" class="content-section">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h4>المحادثات</h4>
+                                <div id="conversationsList" style="max-height: 600px; overflow-y: auto;">
+                                    <!-- سيتم ملؤها ديناميكياً -->
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="chat-container" id="chatContainer">
+                                    <div class="chat-messages" id="chatMessages">
+                                        <p class="text-center text-muted">اختر محادثة لعرض الرسائل</p>
+                                    </div>
+                                    <div class="message-input">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="messageInput" placeholder="اكتب رسالة...">
+                                            <button class="btn btn-primary" onclick="sendMessage()">
+                                                <i class="bi bi-send-fill"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications Section -->
+                    <div id="notifications" class="content-section">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2>الإشعارات</h2>
+                            <button class="btn btn-primary" onclick="showSendNotificationModal()">
+                                <i class="bi bi-plus-circle"></i> إرسال إشعار
+                            </button>
+                        </div>
+                        <div id="notificationsList">
+                            <!-- سيتم ملؤها ديناميكياً -->
+                        </div>
+                    </div>
+
+                    <!-- Reports Section -->
+                    <div id="reports" class="content-section">
+                        <h2 class="mb-4">التقارير</h2>
+                        <div id="reportsContent">
+                            <!-- سيتم ملؤها ديناميكياً -->
+                        </div>
+                    </div>
+
+                    <!-- Users Section -->
+                    <div id="users" class="content-section">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2>إدارة المستخدمين</h2>
+                            <button class="btn btn-primary" onclick="showAddUserModal()">
+                                <i class="bi bi-plus-circle"></i> إضافة مستخدم
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>اسم المستخدم</th>
+                                        <th>الاسم الكامل</th>
+                                        <th>البريد الإلكتروني</th>
+                                        <th>المدرسة</th>
+                                        <th>الدور</th>
+                                        <th>الحالة</th>
+                                        <th>آخر تسجيل دخول</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <tr>
+                                        <td colspan="8" class="text-center">جاري التحميل...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Settings Section -->
+                    <div id="settings" class="content-section">
+                        <h2 class="mb-4">الإعدادات</h2>
+                        <div id="settingsContent">
+                            <!-- سيتم ملؤها ديناميكياً -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="modalsContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../config.js"></script>
+    <script src="../utils.js"></script>
+    <script src="notifications-system.js"></script>
+    <script src="settings-page.js"></script>
+    <script src="users-management.js"></script>
+    <script src="admin-dashboard.js"></script>
+</body>
+</html>
+
