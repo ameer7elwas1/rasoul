@@ -17,22 +17,46 @@ function getCurrentUser() {
 async function addStudent(studentData) {
     try {
         const currentUser = getCurrentUser();
+        
+        // التحقق من البيانات المطلوبة
+        if (!studentData.name || !studentData.name.trim()) {
+            return { success: false, error: 'اسم الطالب مطلوب' };
+        }
+        if (!studentData.guardian_name || !studentData.guardian_name.trim()) {
+            return { success: false, error: 'اسم ولي الأمر مطلوب' };
+        }
+        if (!studentData.mother_name || !studentData.mother_name.trim()) {
+            return { success: false, error: 'اسم الأم مطلوب' };
+        }
+        if (!studentData.grade) {
+            return { success: false, error: 'الصف مطلوب' };
+        }
+        if (!studentData.school_id) {
+            return { success: false, error: 'المدرسة مطلوبة' };
+        }
+        
         // حساب الخصم بناءً على عدد الإخوة
         let discountRate = 0;
-        if (studentData.sibling_count >= 3) {
+        const siblingCount = parseInt(studentData.sibling_count || 1);
+        if (siblingCount >= 3) {
             discountRate = CONFIG.DISCOUNTS.SIBLING_3_PLUS; // 10%
-        } else if (studentData.sibling_count === 2) {
+        } else if (siblingCount === 2) {
             discountRate = CONFIG.DISCOUNTS.SIBLING_2; // 5%
         }
 
         const annualFee = parseFloat(studentData.annual_fee || 0);
+        if (annualFee <= 0) {
+            return { success: false, error: 'المبلغ السنوي يجب أن يكون أكبر من صفر' };
+        }
+        
         const discountAmount = annualFee * discountRate;
         const finalFee = annualFee - discountAmount;
 
         // إنشاء الأقساط (4 دفعات)
-        const installmentAmount = finalFee / CONFIG.INSTALLMENT_COUNT;
+        const installmentCount = CONFIG.INSTALLMENT_COUNT || 4;
+        const installmentAmount = finalFee / installmentCount;
         const installments = [];
-        for (let i = 1; i <= CONFIG.INSTALLMENT_COUNT; i++) {
+        for (let i = 1; i <= installmentCount; i++) {
             installments.push({
                 installment_number: i,
                 due_date: calculateDueDate(i),
@@ -43,28 +67,42 @@ async function addStudent(studentData) {
             });
         }
 
-        // إدراج الطالب
+        // تنظيف رقم الهاتف
+        const cleanedPhone = Utils.cleanPhone ? Utils.cleanPhone(studentData.phone) : (studentData.phone || null);
+        
+        // إدراج الطالب - فقط الحقول المطلوبة والموجودة
         const insertData = {
             name: studentData.name.trim(),
             guardian_name: studentData.guardian_name.trim(),
             mother_name: studentData.mother_name.trim(),
-            grade: studentData.grade,
-            phone: Utils.cleanPhone(studentData.phone),
+            grade: studentData.grade.trim(),
             school_id: studentData.school_id,
             annual_fee: annualFee,
             final_fee: finalFee,
             discount_amount: discountAmount,
             discount_percentage: discountRate * 100,
-            has_sibling: studentData.sibling_count > 1,
+            has_sibling: siblingCount > 1,
             installments: installments,
             registration_date: studentData.registration_date || new Date().toISOString().split('T')[0],
-            notes: studentData.notes || null
+            is_active: true,
+            status: 'unpaid'
         };
         
-        // إضافة created_by إذا كان المستخدم موجوداً
+        // إضافة الحقول الاختيارية فقط إذا كانت موجودة
+        if (cleanedPhone) {
+            insertData.phone = cleanedPhone;
+        }
+        
+        if (studentData.notes && studentData.notes.trim()) {
+            insertData.notes = studentData.notes.trim();
+        }
+        
+        // إضافة created_by فقط إذا كان موجوداً (اختياري)
         if (currentUser && currentUser.id) {
             insertData.created_by = String(currentUser.id);
         }
+        
+        console.log('إدراج بيانات الطالب:', insertData);
         
         const { data, error } = await supabase
             .from('students')
@@ -72,12 +110,16 @@ async function addStudent(studentData) {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('خطأ Supabase:', error);
+            throw error;
+        }
 
         return { success: true, data };
     } catch (error) {
         console.error('خطأ في إضافة الطالب:', error);
-        return { success: false, error: error.message };
+        const errorMessage = error.message || 'حدث خطأ غير معروف';
+        return { success: false, error: errorMessage };
     }
 }
 
