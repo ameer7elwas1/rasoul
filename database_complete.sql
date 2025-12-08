@@ -490,7 +490,12 @@ BEGIN
         WHERE table_name = 'students' AND column_name = 'receipt_number'
     ) THEN
         -- إزالة NOT NULL constraint إذا كان موجوداً
-        ALTER TABLE students ALTER COLUMN receipt_number DROP NOT NULL;
+        BEGIN
+            ALTER TABLE students ALTER COLUMN receipt_number DROP NOT NULL;
+        EXCEPTION WHEN OTHERS THEN
+            -- تجاهل الخطأ إذا لم يكن NOT NULL موجوداً
+            NULL;
+        END;
         
         -- إزالة constraint القديم إذا كان موجوداً
         IF EXISTS (
@@ -507,11 +512,21 @@ BEGIN
                 AND constraint_name LIKE '%receipt_number%'
                 AND constraint_type = 'CHECK'
             LOOP
-                EXECUTE 'ALTER TABLE students DROP CONSTRAINT IF EXISTS ' || quote_ident(rec.constraint_name);
+                BEGIN
+                    EXECUTE 'ALTER TABLE students DROP CONSTRAINT IF EXISTS ' || quote_ident(rec.constraint_name);
+                EXCEPTION WHEN OTHERS THEN
+                    NULL;
+                END;
             END LOOP;
         END IF;
         
         -- إضافة constraint الصحيح
+        BEGIN
+            ALTER TABLE students DROP CONSTRAINT IF EXISTS students_receipt_number_check;
+        EXCEPTION WHEN OTHERS THEN
+            NULL;
+        END;
+        
         IF NOT EXISTS (
             SELECT 1 FROM information_schema.table_constraints 
             WHERE table_name = 'students' 
@@ -521,6 +536,10 @@ BEGIN
                 CHECK (receipt_number IS NULL OR LENGTH(receipt_number) >= 1);
         END IF;
     END IF;
+    
+    -- تحديث القيم الافتراضية للأعمدة الجديدة
+    UPDATE students SET discount_amount = 0 WHERE discount_amount IS NULL;
+    UPDATE students SET discount_percentage = 0 WHERE discount_percentage IS NULL;
 END $$;
 
 -- جدول المدفوعات
