@@ -1,6 +1,7 @@
 // ============================================
 // Utilities JavaScript
 // ============================================
+// Last updated: 2025-01-27 - Added cleanPhone and buildWhatsAppURL
 
 const Utils = {
     // تنسيق العملة
@@ -215,4 +216,18 @@ const Utils = {
         }
     }
 };
+
+// التحقق من تحميل الدوال المهمة
+if (typeof Utils !== 'undefined') {
+    // التحقق من وجود cleanPhone
+    if (typeof Utils.cleanPhone !== 'function') {
+        console.error('Utils.cleanPhone is not defined!');
+    }
+    // التحقق من وجود buildWhatsAppURL
+    if (typeof Utils.buildWhatsAppURL !== 'function') {
+        console.error('Utils.buildWhatsAppURL is not defined!');
+    }
+} else {
+    console.error('Utils object is not defined!');
+}
 
