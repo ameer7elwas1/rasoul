@@ -333,6 +333,35 @@ DO $$
 DECLARE
     rec RECORD;
 BEGIN
+    -- إصلاح العمود القديم guardian وتحويله إلى guardian_name
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'students' AND column_name = 'guardian'
+    ) THEN
+        -- إذا كان guardian موجوداً و guardian_name غير موجود، نسخ البيانات
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'students' AND column_name = 'guardian_name'
+        ) THEN
+            ALTER TABLE students ADD COLUMN guardian_name TEXT;
+            UPDATE students SET guardian_name = guardian WHERE guardian IS NOT NULL;
+            UPDATE students SET guardian_name = 'غير محدد' WHERE guardian_name IS NULL;
+        ELSE
+            -- إذا كان كلاهما موجوداً، نسخ البيانات من guardian إلى guardian_name
+            UPDATE students SET guardian_name = guardian WHERE guardian IS NOT NULL AND (guardian_name IS NULL OR guardian_name = '');
+        END IF;
+        
+        -- حذف constraint القديم
+        BEGIN
+            ALTER TABLE students ALTER COLUMN guardian DROP NOT NULL;
+        EXCEPTION WHEN OTHERS THEN
+            NULL;
+        END;
+        
+        -- حذف العمود القديم guardian
+        ALTER TABLE students DROP COLUMN IF EXISTS guardian CASCADE;
+    END IF;
+    
     -- إضافة عمود guardian_name إذا لم يكن موجوداً
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns 
@@ -352,6 +381,17 @@ BEGIN
             ALTER TABLE students ADD CONSTRAINT students_guardian_name_check 
                 CHECK (LENGTH(TRIM(guardian_name)) >= 2 AND LENGTH(guardian_name) <= 200);
         END IF;
+    ELSE
+        -- التأكد من أن guardian_name لديه NOT NULL constraint
+        BEGIN
+            -- تحديث القيم NULL أولاً
+            UPDATE students SET guardian_name = 'غير محدد' WHERE guardian_name IS NULL OR TRIM(guardian_name) = '';
+            -- إضافة NOT NULL
+            ALTER TABLE students ALTER COLUMN guardian_name SET NOT NULL;
+        EXCEPTION WHEN OTHERS THEN
+            -- إذا فشل، تجاهل الخطأ
+            NULL;
+        END;
     END IF;
     
     -- إضافة عمود mother_name إذا لم يكن موجوداً
