@@ -1297,102 +1297,102 @@ $$ LANGUAGE plpgsql;
 -- SELECT * FROM get_overdue_students_by_school('rawda', 7);
 
 -- ============================================
--- استعلامات للتحقق من المستخدمين
+-- استعلامات للتحقق من المستخدمين (معطلة - للاستخدام اليدوي فقط)
 -- ============================================
 
 -- عرض جميع المستخدمين مع معلوماتهم
-SELECT 
-    id,
-    username,
-    full_name,
-    email,
-    school_id,
-    (SELECT name FROM schools WHERE id = users.school_id) AS school_name,
-    role,
-    is_admin,
-    is_active,
-    last_login,
-    login_count,
-    created_at,
-    updated_at
-FROM users
-ORDER BY role, is_admin DESC, username;
+-- SELECT 
+--     id,
+--     username,
+--     full_name,
+--     email,
+--     school_id,
+--     (SELECT name FROM schools WHERE id = users.school_id) AS school_name,
+--     role,
+--     is_admin,
+--     is_active,
+--     last_login,
+--     login_count,
+--     created_at,
+--     updated_at
+-- FROM users
+-- ORDER BY role, is_admin DESC, username;
 
 -- عرض المستخدمين حسب الدور
-SELECT 
-    role,
-    COUNT(*) AS total_users,
-    COUNT(*) FILTER (WHERE is_active = TRUE) AS active_users,
-    COUNT(*) FILTER (WHERE is_active = FALSE) AS inactive_users
-FROM users
-GROUP BY role
-ORDER BY role;
+-- SELECT 
+--     role,
+--     COUNT(*) AS total_users,
+--     COUNT(*) FILTER (WHERE is_active = TRUE) AS active_users,
+--     COUNT(*) FILTER (WHERE is_active = FALSE) AS inactive_users
+-- FROM users
+-- GROUP BY role
+-- ORDER BY role;
 
 -- عرض المستخدمين حسب المدرسة
-SELECT 
-    u.username,
-    u.full_name,
-    u.role,
-    u.is_active,
-    s.name AS school_name,
-    s.code AS school_code
-FROM users u
-LEFT JOIN schools s ON u.school_id = s.id
-WHERE u.school_id IS NOT NULL
-ORDER BY s.name, u.role, u.username;
+-- SELECT 
+--     u.username,
+--     u.full_name,
+--     u.role,
+--     u.is_active,
+--     s.name AS school_name,
+--     s.code AS school_code
+-- FROM users u
+-- LEFT JOIN schools s ON u.school_id = s.id
+-- WHERE u.school_id IS NOT NULL
+-- ORDER BY s.name, u.role, u.username;
 
 -- عرض المستخدمين النشطين فقط
-SELECT 
-    username,
-    full_name,
-    email,
-    (SELECT name FROM schools WHERE id = users.school_id) AS school_name,
-    role,
-    is_admin,
-    last_login,
-    login_count
-FROM users
-WHERE is_active = TRUE
-ORDER BY role, username;
+-- SELECT 
+--     username,
+--     full_name,
+--     email,
+--     (SELECT name FROM schools WHERE id = users.school_id) AS school_name,
+--     role,
+--     is_admin,
+--     last_login,
+--     login_count
+-- FROM users
+-- WHERE is_active = TRUE
+-- ORDER BY role, username;
 
 -- عرض المستخدمين غير النشطين
-SELECT 
-    username,
-    full_name,
-    email,
-    (SELECT name FROM schools WHERE id = users.school_id) AS school_name,
-    role,
-    is_admin,
-    created_at,
-    updated_at
-FROM users
-WHERE is_active = FALSE
-ORDER BY updated_at DESC;
+-- SELECT 
+--     username,
+--     full_name,
+--     email,
+--     (SELECT name FROM schools WHERE id = users.school_id) AS school_name,
+--     role,
+--     is_admin,
+--     created_at,
+--     updated_at
+-- FROM users
+-- WHERE is_active = FALSE
+-- ORDER BY updated_at DESC;
 
 -- عرض المستخدمين الذين لم يسجلوا دخول أبداً
-SELECT 
-    username,
-    full_name,
-    email,
-    (SELECT name FROM schools WHERE id = users.school_id) AS school_name,
-    role,
-    created_at
-FROM users
-WHERE last_login IS NULL
-ORDER BY created_at DESC;
+-- SELECT 
+--     username,
+--     full_name,
+--     email,
+--     (SELECT name FROM schools WHERE id = users.school_id) AS school_name,
+--     role,
+--     created_at
+-- FROM users
+-- WHERE last_login IS NULL
+-- ORDER BY created_at DESC;
 
 -- عرض المستخدمين حسب آخر تسجيل دخول
-SELECT 
-    username,
-    full_name,
-    (SELECT name FROM schools WHERE id = users.school_id) AS school_name,
-    role,
-    last_login,
-    login_count
-FROM users
-WHERE last_login IS NOT NULL
-ORDER BY last_login DESC
-LIMIT 20;
+-- SELECT 
+--     username,
+--     full_name,
+--     (SELECT name FROM schools WHERE id = users.school_id) AS school_name,
+--     role,
+--     last_login,
+--     login_count
+-- FROM users
+-- WHERE last_login IS NOT NULL
+-- ORDER BY last_login DESC
+-- LIMIT 20;
 
 -- ============================================
 -- أسماء المستخدمين وكلمات المرور الافتراضية
