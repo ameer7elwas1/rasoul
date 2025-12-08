@@ -7,7 +7,7 @@ yarn.lock
 .env
 .env.local
 .env.production
-config.js
+# config.js - سيتم رفعه مع قيم يجب تحديثها
 
 # IDE
 .vscode/
