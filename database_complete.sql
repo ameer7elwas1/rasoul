@@ -417,6 +417,22 @@ BEGIN
     ) THEN
         ALTER TABLE students ADD COLUMN registration_date DATE DEFAULT CURRENT_DATE;
     END IF;
+    
+    -- إضافة عمود created_by إذا لم يكن موجوداً
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'students' AND column_name = 'created_by'
+    ) THEN
+        ALTER TABLE students ADD COLUMN created_by TEXT;
+    END IF;
+    
+    -- إضافة عمود updated_by إذا لم يكن موجوداً
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'students' AND column_name = 'updated_by'
+    ) THEN
+        ALTER TABLE students ADD COLUMN updated_by TEXT;
+    END IF;
 END $$;
 
 -- جدول المدفوعات

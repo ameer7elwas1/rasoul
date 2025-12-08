@@ -44,25 +44,31 @@ async function addStudent(studentData) {
         }
 
         // إدراج الطالب
+        const insertData = {
+            name: studentData.name.trim(),
+            guardian_name: studentData.guardian_name.trim(),
+            mother_name: studentData.mother_name.trim(),
+            grade: studentData.grade,
+            phone: Utils.cleanPhone(studentData.phone),
+            school_id: studentData.school_id,
+            annual_fee: annualFee,
+            final_fee: finalFee,
+            discount_amount: discountAmount,
+            discount_percentage: discountRate * 100,
+            has_sibling: studentData.sibling_count > 1,
+            installments: installments,
+            registration_date: studentData.registration_date || new Date().toISOString().split('T')[0],
+            notes: studentData.notes || null
+        };
+        
+        // إضافة created_by إذا كان المستخدم موجوداً
+        if (currentUser && currentUser.id) {
+            insertData.created_by = String(currentUser.id);
+        }
+        
         const { data, error } = await supabase
             .from('students')
-            .insert({
-                name: studentData.name.trim(),
-                guardian_name: studentData.guardian_name.trim(),
-                mother_name: studentData.mother_name.trim(),
-                grade: studentData.grade,
-                phone: Utils.cleanPhone(studentData.phone),
-                school_id: studentData.school_id,
-                annual_fee: annualFee,
-                final_fee: finalFee,
-                discount_amount: discountAmount,
-                discount_percentage: discountRate * 100,
-                has_sibling: studentData.sibling_count > 1,
-                installments: installments,
-                registration_date: studentData.registration_date || new Date().toISOString().split('T')[0],
-                notes: studentData.notes || null,
-                created_by: currentUser.id ? String(currentUser.id) : null
-            })
+            .insert(insertData)
             .select()
             .single();
 
