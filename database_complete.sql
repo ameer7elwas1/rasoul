@@ -436,6 +436,50 @@ BEGIN
     ) THEN
         ALTER TABLE students ADD COLUMN updated_by TEXT;
     END IF;
+    
+    -- إضافة عمود discount_amount إذا لم يكن موجوداً
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'students' AND column_name = 'discount_amount'
+    ) THEN
+        ALTER TABLE students ADD COLUMN discount_amount NUMERIC(15, 2) DEFAULT 0;
+        -- إضافة constraint CHECK
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE table_name = 'students' 
+            AND constraint_name = 'students_discount_amount_check'
+        ) THEN
+            ALTER TABLE students ADD CONSTRAINT students_discount_amount_check 
+                CHECK (discount_amount >= 0);
+        END IF;
+    END IF;
+    
+    -- إضافة عمود discount_percentage إذا لم يكن موجوداً
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'students' AND column_name = 'discount_percentage'
+    ) THEN
+        ALTER TABLE students ADD COLUMN discount_percentage NUMERIC(5, 2) DEFAULT 0;
+        -- إضافة constraint CHECK
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE table_name = 'students' 
+            AND constraint_name = 'students_discount_percentage_check'
+        ) THEN
+            ALTER TABLE students ADD CONSTRAINT students_discount_percentage_check 
+                CHECK (discount_percentage >= 0 AND discount_percentage <= 100);
+        END IF;
+    END IF;
+    
+    -- إضافة constraint students_discount_check إذا لم يكن موجوداً
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints 
+        WHERE table_name = 'students' 
+        AND constraint_name = 'students_discount_check'
+    ) THEN
+        ALTER TABLE students ADD CONSTRAINT students_discount_check 
+            CHECK (discount_amount <= annual_fee);
+    END IF;
 END $$;
 
 -- جدول المدفوعات
