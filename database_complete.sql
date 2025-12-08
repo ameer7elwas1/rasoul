@@ -480,6 +480,45 @@ BEGIN
         ALTER TABLE students ADD CONSTRAINT students_discount_check 
             CHECK (discount_amount <= annual_fee);
     END IF;
+    
+    -- إصلاح constraint receipt_number - يجب أن يكون NULL مسموحاً
+    -- التحقق من أن العمود موجود أولاً
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'students' AND column_name = 'receipt_number'
+    ) THEN
+        -- إزالة NOT NULL constraint إذا كان موجوداً
+        ALTER TABLE students ALTER COLUMN receipt_number DROP NOT NULL;
+        
+        -- إزالة constraint القديم إذا كان موجوداً
+        IF EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE table_name = 'students' 
+            AND constraint_name LIKE '%receipt_number%'
+            AND constraint_type = 'CHECK'
+        ) THEN
+            -- حذف جميع constraints المتعلقة بـ receipt_number
+            FOR rec IN 
+                SELECT constraint_name 
+                FROM information_schema.table_constraints 
+                WHERE table_name = 'students' 
+                AND constraint_name LIKE '%receipt_number%'
+                AND constraint_type = 'CHECK'
+            LOOP
+                EXECUTE 'ALTER TABLE students DROP CONSTRAINT IF EXISTS ' || quote_ident(rec.constraint_name);
+            END LOOP;
+        END IF;
+        
+        -- إضافة constraint الصحيح
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints 
+            WHERE table_name = 'students' 
+            AND constraint_name = 'students_receipt_number_check'
+        ) THEN
+            ALTER TABLE students ADD CONSTRAINT students_receipt_number_check 
+                CHECK (receipt_number IS NULL OR LENGTH(receipt_number) >= 1);
+        END IF;
+    END IF;
 END $$;
 
 -- جدول المدفوعات
