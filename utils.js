@@ -124,23 +124,47 @@ const Utils = {
         // إذا كان فارغاً بعد التنظيف
         if (!cleaned) return null;
         
-        // إذا كان يبدأ بـ +، نتركه كما هو
+        // إزالة + من البداية للتحقق
+        const withoutPlus = cleaned.startsWith('+') ? cleaned.substring(1) : cleaned;
+        
+        // التحقق من وجود كود الدولة 964 مكرر
+        if (withoutPlus.startsWith('964964')) {
+            // إزالة التكرار
+            cleaned = '+' + withoutPlus.substring(3);
+            return cleaned;
+        }
+        
+        // إذا كان يبدأ بـ +، نتركه كما هو (بعد التحقق من التكرار)
         if (cleaned.startsWith('+')) {
             return cleaned;
         }
         
         // إذا كان يبدأ بـ 00، نستبدله بـ +
         if (cleaned.startsWith('00')) {
-            return '+' + cleaned.substring(2);
+            const without00 = cleaned.substring(2);
+            // التحقق من عدم وجود 964 مكرر
+            if (without00.startsWith('964964')) {
+                return '+' + without00.substring(3);
+            }
+            return '+' + without00;
         }
         
         // إذا كان يبدأ بـ 0، نستبدله بـ 964 (كود العراق)
         if (cleaned.startsWith('0')) {
-            return '964' + cleaned.substring(1);
+            const without0 = cleaned.substring(1);
+            // التحقق من عدم وجود 964 مكرر
+            if (without0.startsWith('964')) {
+                return '+' + without0;
+            }
+            return '964' + without0;
         }
         
         // إذا كان يبدأ بـ 964، نضيف + في البداية
         if (cleaned.startsWith('964')) {
+            // التحقق من عدم وجود 964 مكرر
+            if (cleaned.startsWith('964964')) {
+                return '+' + cleaned.substring(3);
+            }
             return '+' + cleaned;
         }
         
@@ -150,7 +174,11 @@ const Utils = {
             return '964' + cleaned;
         }
         
-        // في حالة أخرى، نعيد الرقم كما هو
+        // في حالة أخرى، نعيد الرقم كما هو (لكن نزيل التكرار إذا كان موجوداً)
+        if (cleaned.startsWith('964964')) {
+            return '+' + cleaned.substring(3);
+        }
+        
         return cleaned;
     },
 
