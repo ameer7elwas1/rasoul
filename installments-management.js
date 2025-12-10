@@ -304,13 +304,11 @@ async function submitPayment() {
             if (paymentId) {
                 if (printBtn) {
                     printBtn.style.display = 'inline-block';
-                    printBtn.onclick = () => {
+                    printBtn.onclick = async () => {
                         if (typeof printPaymentReceipt === 'function') {
-                            if (typeof printPaymentReceipt === 'function') {
-                                await printPaymentReceipt(paymentId);
-                            } else {
-                                showAlert('دالة الطباعة غير متوفرة', 'warning');
-                            }
+                            await printPaymentReceipt(paymentId);
+                        } else {
+                            showAlert('دالة الطباعة غير متوفرة', 'warning');
                         }
                     };
                 }
