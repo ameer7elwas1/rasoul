@@ -157,26 +157,39 @@
 
         
         async function verifyPassword(password, hash) {
-            
-            
-            const response = await supabase.rpc('verify_password', {
-                password: password,
-                hash: hash
-            });
-            
-            if (response.error) {
-                // Fallback: direct comparison (for development only)
-                return password === hash;
+            if (!password || !hash) {
+                console.error('Password or hash is missing');
+                return false;
             }
             
-            return response.data;
+            try {
+                const response = await supabase.rpc('verify_password', {
+                    password: password,
+                    hash: hash
+                });
+                
+                if (response.error) {
+                    console.warn('RPC verify_password failed, using fallback:', response.error);
+                    // Fallback: direct comparison (for development only)
+                    // This is used when passwords are stored in plain text or RPC function doesn't exist
+                    return password === hash;
+                }
+                
+                return response.data === true;
+            } catch (error) {
+                console.error('Error in verifyPassword:', error);
+                // Fallback: direct comparison
+                return password === hash;
+            }
         }
 
         
         async function login(username, password) {
             try {
+                const trimmedUsername = username.toLowerCase().trim();
+                console.log('Attempting login for username:', trimmedUsername);
                 
-                const { data: users, error: fetchError } = await supabase
+                const { data: user, error: fetchError } = await supabase
                     .from('users')
                     .select(`
                         *,
@@ -185,11 +198,12 @@
                             name
                         )
                     `)
-                    .eq('username', username.toLowerCase().trim())
+                    .eq('username', trimmedUsername)
                     .eq('is_active', true)
                     .single();
 
-                if (fetchError || !users) {
+                if (fetchError) {
+                    console.error('Error fetching user:', fetchError);
                     loginAttempts++;
                     if (loginAttempts >= maxAttempts) {
                         showAlert('تم تجاوز عدد محاولات الدخول المسموح بها. يرجى المحاولة لاحقاً.', 'danger');
@@ -199,10 +213,23 @@
                     return false;
                 }
 
-                
-                const isValid = await verifyPassword(password, users.password_hash);
+                if (!user) {
+                    console.error('User not found:', trimmedUsername);
+                    loginAttempts++;
+                    if (loginAttempts >= maxAttempts) {
+                        showAlert('تم تجاوز عدد محاولات الدخول المسموح بها. يرجى المحاولة لاحقاً.', 'danger');
+                        return false;
+                    }
+                    showAlert('اسم المستخدم أو كلمة المرور غير صحيحة', 'danger');
+                    return false;
+                }
+
+                console.log('User found, verifying password...');
+                const isValid = await verifyPassword(password, user.password_hash);
+                console.log('Password verification result:', isValid);
                 
                 if (!isValid) {
+                    console.warn('Invalid password for user:', trimmedUsername);
                     loginAttempts++;
                     if (loginAttempts >= maxAttempts) {
                         showAlert('تم تجاوز عدد محاولات الدخول المسموح بها. يرجى المحاولة لاحقاً.', 'danger');
@@ -213,45 +240,46 @@
                 }
 
                 
-                if (users.locked_until && new Date(users.locked_until) > new Date()) {
-                    const lockTime = Math.ceil((new Date(users.locked_until) - new Date()) / 60000);
+                if (user.locked_until && new Date(user.locked_until) > new Date()) {
+                    const lockTime = Math.ceil((new Date(user.locked_until) - new Date()) / 60000);
                     showAlert(`الحساب مقفل. يرجى المحاولة بعد ${lockTime} دقيقة`, 'warning');
                     return false;
                 }
 
+                console.log('Login successful, updating user data...');
                 
                 await supabase
                     .from('users')
                     .update({
                         last_login: new Date().toISOString(),
-                        login_count: (users.login_count || 0) + 1,
+                        login_count: (user.login_count || 0) + 1,
                         failed_login_attempts: 0,
                         locked_until: null
                     })
-                    .eq('id', users.id);
+                    .eq('id', user.id);
 
                 
                 const userData = {
-                    id: users.id,
-                    username: users.username,
-                    full_name: users.full_name,
-                    role: users.role,
-                    is_admin: users.is_admin,
-                    school_id: users.school_id,
-                    school_name: users.schools?.name || null
+                    id: user.id,
+                    username: user.username,
+                    full_name: user.full_name,
+                    role: user.role,
+                    is_admin: user.is_admin,
+                    school_id: user.school_id,
+                    school_name: user.schools?.name || null
                 };
 
                 localStorage.setItem('user', JSON.stringify(userData));
                 localStorage.setItem('loginTime', new Date().toISOString());
 
-                
                 loginAttempts = 0;
 
+                console.log('Redirecting user...', userData);
                 
-                if (users.is_admin || users.role === 'admin') {
+                if (user.is_admin || user.role === 'admin') {
                     window.location.href = 'admin-dashboard.html';
-                } else if (users.school_id) {
-                    window.location.href = `school-dashboard.html?school=${users.school_id}`;
+                } else if (user.school_id) {
+                    window.location.href = `school-dashboard.html?school=${user.school_id}`;
                 } else {
                     window.location.href = 'dashboard.html';
                 }
