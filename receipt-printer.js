@@ -481,6 +481,7 @@ async function exportReceiptToPDF(paymentId) {
             return;
         }
 
+        // جلب بيانات الدفعة
         const { data: payment, error: paymentError } = await supabase
             .from('payments')
             .select(`
@@ -496,23 +497,41 @@ async function exportReceiptToPDF(paymentId) {
                     final_fee,
                     discount_amount,
                     discount_percentage,
-                    school_id,
-                    schools (
-                        id,
-                        name
-                    )
+                    school_id
                 )
             `)
             .eq('id', paymentId)
             .single();
 
-        if (paymentError) throw paymentError;
+        if (paymentError) {
+            throw new Error(`خطأ في جلب بيانات الدفعة: ${paymentError.message || 'خطأ غير معروف'}`);
+        }
+
         if (!payment || !payment.students) {
             throw new Error('Payment or student data not found');
         }
 
         const student = payment.students;
-        const school = student.schools || { name: 'المدرسة' };
+        
+        // جلب بيانات المدرسة بشكل منفصل
+        let school = { name: 'المدرسة' };
+        if (student.school_id) {
+            try {
+                const { data: schoolData, error: schoolError } = await supabase
+                    .from('schools')
+                    .select('id, name')
+                    .eq('id', student.school_id)
+                    .single();
+                
+                if (!schoolError && schoolData) {
+                    school = schoolData;
+                } else if (schoolError) {
+                    console.warn('خطأ في جلب بيانات المدرسة:', schoolError);
+                }
+            } catch (err) {
+                console.warn('خطأ في جلب بيانات المدرسة:', err);
+            }
+        }
         
         const paymentDate = new Date(payment.payment_date);
         const formattedDate = Utils.formatDateArabic(payment.payment_date);
