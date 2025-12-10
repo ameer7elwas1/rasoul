@@ -2,7 +2,6 @@
 // Students Management JavaScript
 // ============================================
 
-// الحصول على المستخدم الحالي
 function getCurrentUser() {
     try {
         const userData = localStorage.getItem('user');
@@ -13,12 +12,10 @@ function getCurrentUser() {
     }
 }
 
-// إضافة طالب جديد
 async function addStudent(studentData) {
     try {
         const currentUser = getCurrentUser();
         
-        // التحقق من البيانات المطلوبة
         if (!studentData.name || !studentData.name.trim()) {
             return { success: false, error: 'اسم الطالب مطلوب' };
         }
@@ -35,12 +32,10 @@ async function addStudent(studentData) {
             return { success: false, error: 'المدرسة مطلوبة' };
         }
         
-        // اكتشاف الإخوة تلقائياً: البحث في جميع المدارس والروضات
-        let detectedSiblingCount = 1; // الطالب نفسه
+        let detectedSiblingCount = 1;
         let detectedSiblings = [];
         
         try {
-            // البحث عن إخوة في جميع المدارس والروضات بناءً على اسم ولي الأمر واسم الأم
             const { data: siblings, error: siblingsError } = await supabase
                 .from('students')
                 .select(`
@@ -55,35 +50,29 @@ async function addStudent(studentData) {
                 `)
                 .eq('guardian_name', studentData.guardian_name.trim())
                 .eq('mother_name', studentData.mother_name.trim())
-                .neq('school_id', studentData.school_id) // استبعاد المدرسة الحالية (لأن الطالب الجديد سيسجل فيها)
+                .neq('school_id', studentData.school_id)
                 .eq('is_active', true);
             
             if (!siblingsError && siblings && siblings.length > 0) {
                 detectedSiblings = siblings;
-                detectedSiblingCount = siblings.length + 1; // الإخوة + الطالب الجديد
+                detectedSiblingCount = siblings.length + 1;
                 console.log(`تم اكتشاف ${siblings.length} أخ/أخت في المدارس والروضات للطالب الجديد`);
             }
         } catch (error) {
             console.error('خطأ في البحث عن الإخوة:', error);
-            // نتابع بدون اكتشاف الإخوة في حالة الخطأ
         }
         
-        // استخدام عدد الإخوة المكتشف تلقائياً إذا لم يتم تحديده يدوياً
         let finalSiblingCount = parseInt(studentData.sibling_count || detectedSiblingCount);
         
-        // إذا تم اكتشاف إخوة تلقائياً وكان العدد المكتشف أكبر من المحدد يدوياً، نستخدم المكتشف
         if (detectedSiblingCount > finalSiblingCount) {
             finalSiblingCount = detectedSiblingCount;
         }
         
-        // حساب الخصم بناءً على عدد الإخوة
-        // 2 إخوة (الطالب + أخ واحد) = 5%
-        // 3 إخوة أو أكثر (الطالب + 2 أخوة أو أكثر) = 10%
         let discountRate = 0;
         if (finalSiblingCount >= 3) {
-            discountRate = CONFIG.DISCOUNTS.SIBLING_3_PLUS; // 10%
+            discountRate = CONFIG.DISCOUNTS.SIBLING_3_PLUS;
         } else if (finalSiblingCount === 2) {
-            discountRate = CONFIG.DISCOUNTS.SIBLING_2; // 5%
+            discountRate = CONFIG.DISCOUNTS.SIBLING_2;
         }
 
         const annualFee = parseFloat(studentData.annual_fee || 0);
@@ -94,7 +83,6 @@ async function addStudent(studentData) {
         const discountAmount = annualFee * discountRate;
         const finalFee = annualFee - discountAmount;
 
-        // إنشاء الأقساط (4 دفعات)
         const installmentCount = CONFIG.INSTALLMENT_COUNT || 4;
         const installmentAmount = finalFee / installmentCount;
         const installments = [];
@@ -109,10 +97,8 @@ async function addStudent(studentData) {
             });
         }
 
-        // تنظيف رقم الهاتف
         const cleanedPhone = Utils.cleanPhone ? Utils.cleanPhone(studentData.phone) : (studentData.phone || null);
         
-        // إدراج الطالب - فقط الحقول المطلوبة والموجودة
         const insertData = {
             name: studentData.name.trim(),
             guardian_name: studentData.guardian_name.trim(),
@@ -130,7 +116,6 @@ async function addStudent(studentData) {
             status: 'unpaid'
         };
         
-        // إضافة الحقول الاختيارية فقط إذا كانت موجودة
         if (cleanedPhone) {
             insertData.phone = cleanedPhone;
         }
@@ -139,7 +124,6 @@ async function addStudent(studentData) {
             insertData.notes = studentData.notes.trim();
         }
         
-        // إضافة created_by فقط إذا كان موجوداً (اختياري)
         if (currentUser && currentUser.id) {
             insertData.created_by = String(currentUser.id);
         }
@@ -157,7 +141,6 @@ async function addStudent(studentData) {
             throw error;
         }
 
-        // إضافة معلومات الإخوة المكتشفين إلى النتيجة
         const result = { success: true, data };
         if (detectedSiblings.length > 0) {
             result.detectedSiblings = detectedSiblings;
@@ -165,7 +148,6 @@ async function addStudent(studentData) {
             result.discountApplied = discountRate > 0;
             result.discountPercentage = discountRate * 100;
             
-            // تجميع معلومات المدارس للإخوة المكتشفين
             const siblingsInfo = detectedSiblings.map(sibling => {
                 const schoolName = sibling.schools?.name || sibling.school_id || 'مدرسة غير معروفة';
                 return {
@@ -188,21 +170,18 @@ async function addStudent(studentData) {
     }
 }
 
-// حساب تاريخ الاستحقاق للدفعة
 function calculateDueDate(installmentNumber) {
     const now = new Date();
-    const month = now.getMonth() + installmentNumber; // الدفعة الأولى هذا الشهر، الثانية الشهر القادم، إلخ
+    const month = now.getMonth() + installmentNumber;
     const year = now.getFullYear() + Math.floor(month / 12);
     const finalMonth = month % 12;
     
     return new Date(year, finalMonth, 1).toISOString().split('T')[0];
 }
 
-// تحديث بيانات الطالب
 async function updateStudent(studentId, updates) {
     try {
         const currentUser = getCurrentUser();
-        // إذا تم تحديث المبلغ السنوي أو عدد الإخوة، إعادة حساب الخصم والأقساط
         if (updates.annual_fee !== undefined || updates.sibling_count !== undefined) {
             const { data: student, error: fetchError } = await supabase
                 .from('students')
@@ -225,11 +204,9 @@ async function updateStudent(studentId, updates) {
             const discountAmount = annualFee * discountRate;
             const finalFee = annualFee - discountAmount;
 
-            // تحديث الأقساط
             const installments = student.installments || [];
             const installmentAmount = finalFee / CONFIG.INSTALLMENT_COUNT;
             
-            // تحديث مبالغ الأقساط غير المدفوعة فقط
             installments.forEach(inst => {
                 if (inst.status === 'unpaid') {
                     inst.amount = installmentAmount;
@@ -262,11 +239,9 @@ async function updateStudent(studentId, updates) {
     }
 }
 
-// إضافة دفعة للطالب
 async function addPaymentToStudent(studentId, paymentData) {
     try {
         const currentUser = getCurrentUser();
-        // الحصول على بيانات الطالب
         const { data: student, error: fetchError } = await supabase
             .from('students')
             .select('*')
@@ -279,7 +254,6 @@ async function addPaymentToStudent(studentId, paymentData) {
         const amount = parseFloat(paymentData.amount);
         const paymentDate = paymentData.payment_date || new Date().toISOString().split('T')[0];
 
-        // تحديث الأقساط
         const installments = student.installments || [];
         const installment = installments.find(inst => inst.installment_number === installmentNumber);
 
@@ -287,12 +261,10 @@ async function addPaymentToStudent(studentId, paymentData) {
             throw new Error('الدفعة غير موجودة');
         }
 
-        // تحديث الدفعة
         installment.amount_paid = (parseFloat(installment.amount_paid || 0)) + amount;
         installment.payment_date = paymentDate;
         installment.status = installment.amount_paid >= installment.amount ? 'paid' : 'partial';
 
-        // تحديث بيانات الطالب
         await supabase
             .from('students')
             .update({
@@ -301,7 +273,6 @@ async function addPaymentToStudent(studentId, paymentData) {
             })
             .eq('id', studentId);
 
-        // إضافة سجل الدفع في جدول payments
         const { data: payment, error: paymentError } = await supabase
             .from('payments')
             .insert({
@@ -319,7 +290,6 @@ async function addPaymentToStudent(studentId, paymentData) {
 
         if (paymentError) {
             console.error('خطأ في إضافة سجل الدفع:', paymentError);
-            // لا نرمي خطأ هنا لأن الدفعة تم تحديثها بالفعل
         }
 
         return { success: true, data: payment };
@@ -329,7 +299,6 @@ async function addPaymentToStudent(studentId, paymentData) {
     }
 }
 
-// حساب حالة الطالب المالية
 function calculateStudentStatus(student) {
     if (!student.installments || !Array.isArray(student.installments)) {
         return {
@@ -377,7 +346,6 @@ function calculateStudentStatus(student) {
     };
 }
 
-// إرسال تذكير واتساب للطالب
 async function sendWhatsAppReminder(studentId, message = null) {
     try {
         const currentUser = getCurrentUser();
@@ -399,16 +367,13 @@ async function sendWhatsAppReminder(studentId, message = null) {
             return { success: false, error: 'لا يوجد رقم هاتف للطالب' };
         }
 
-        // حساب حالة الطالب
         const status = calculateStudentStatus(student);
         
-        // الحصول على اسم المدرسة
         let schoolName = 'المدرسة';
         if (student.school_id) {
             if (student.schools && student.schools.name) {
                 schoolName = student.schools.name;
             } else {
-                // محاولة جلب اسم المدرسة من قاعدة البيانات كبديل
                 try {
                     const { data: schoolData } = await supabase
                         .from('schools')
@@ -424,25 +389,49 @@ async function sendWhatsAppReminder(studentId, message = null) {
             }
         }
         
-        // إنشاء رسالة افتراضية إذا لم يتم توفيرها
         if (!message) {
-            const unpaidInstallments = student.installments.filter(inst => 
+            const installments = Array.isArray(student.installments) ? student.installments : [];
+            const unpaidInstallments = installments.filter(inst => 
                 parseFloat(inst.amount_paid || 0) < parseFloat(inst.amount || 0)
             );
             
             if (unpaidInstallments.length > 0) {
-                const nextInstallment = unpaidInstallments[0];
-                message = `مرحباً ${student.guardian_name}،
+                let messageParts = [
+                    `مرحباً ${student.guardian_name}،`,
+                    ``,
+                    `تذكير بدفع أقساط الطالب: *${student.name}*`,
+                    `المدرسة: *${schoolName}*`,
+                    `الصف: *${student.grade}*`,
+                    ``
+                ];
                 
-هذا تذكير بدفع أقساط الطالب ${student.name} في ${schoolName}.
-
-الدفعة القادمة: الدفعة ${nextInstallment.installment_number}
-المبلغ: ${Utils.formatCurrency(nextInstallment.amount)}
-تاريخ الاستحقاق: ${Utils.formatDateArabic(nextInstallment.due_date)}
-
-المبلغ المتبقي: ${Utils.formatCurrency(status.remaining)}
-
-شكراً لكم`;
+                messageParts.push(`*الأقساط المستحقة:*`);
+                unpaidInstallments.forEach((inst, index) => {
+                    const amountDue = parseFloat(inst.amount || 0) - parseFloat(inst.amount_paid || 0);
+                    const statusText = parseFloat(inst.amount_paid || 0) > 0 ? 'مدفوع جزئياً' : 'غير مدفوع';
+                    messageParts.push(
+                        `${index + 1}. الدفعة ${inst.installment_number}:`,
+                        `   المبلغ المستحق: ${Utils.formatCurrency(amountDue)}`,
+                        `   تاريخ الاستحقاق: ${Utils.formatDateArabic(inst.due_date)}`,
+                        `   الحالة: ${statusText}`,
+                        ``
+                    );
+                });
+                
+                messageParts.push(
+                    `*الملخص المالي:*`,
+                    `المبلغ السنوي: ${Utils.formatCurrency(student.annual_fee || 0)}`,
+                    student.discount_percentage > 0 ? `الخصم: ${student.discount_percentage}% (${Utils.formatCurrency(student.discount_amount || 0)})` : '',
+                    `المبلغ النهائي: ${Utils.formatCurrency(student.final_fee || 0)}`,
+                    `المبلغ المدفوع: ${Utils.formatCurrency(status.totalPaid)}`,
+                    `المبلغ المتبقي: *${Utils.formatCurrency(status.remaining)}*`,
+                    ``,
+                    `نرجو منكم التكرم بدفع المستحقات في أقرب وقت ممكن.`,
+                    ``,
+                    `شكراً لكم`
+                );
+                
+                message = messageParts.filter(part => part !== '').join('\n');
             } else {
                 message = `مرحباً ${student.guardian_name}،
                 
@@ -452,7 +441,6 @@ async function sendWhatsAppReminder(studentId, message = null) {
             }
         }
 
-        // حفظ الرسالة في قاعدة البيانات
         const { data: whatsappMessage, error: saveError } = await supabase
             .from('whatsapp_messages')
             .insert({
@@ -471,12 +459,10 @@ async function sendWhatsAppReminder(studentId, message = null) {
             console.error('خطأ في حفظ رسالة واتساب:', saveError);
         }
 
-        // فتح واتساب
         const phone = Utils.cleanPhone(student.phone);
         const url = Utils.buildWhatsAppURL(phone, message);
         window.open(url, '_blank');
 
-        // تحديث حالة الرسالة إلى "sent" بعد فتح واتساب
         if (whatsappMessage) {
             setTimeout(async () => {
                 await supabase
@@ -493,7 +479,6 @@ async function sendWhatsAppReminder(studentId, message = null) {
     }
 }
 
-// إرسال رسائل واتساب جماعية
 async function sendBulkWhatsAppMessages(studentIds, message) {
     const results = [];
     
@@ -501,17 +486,14 @@ async function sendBulkWhatsAppMessages(studentIds, message) {
         const result = await sendWhatsAppReminder(studentId, message);
         results.push({ studentId, ...result });
         
-        // تأخير صغير بين الرسائل لتجنب الإفراط في الطلبات
         await new Promise(resolve => setTimeout(resolve, 500));
     }
     
     return results;
 }
 
-// تصدير بيانات الطلاب
 function exportStudents(students, format = 'xlsx') {
     if (format === 'xlsx') {
-        // استخدام مكتبة xlsx إذا كانت متوفرة
         if (typeof XLSX !== 'undefined') {
             const ws = XLSX.utils.json_to_sheet(students.map(s => ({
                 'اسم الطالب': s.name,
