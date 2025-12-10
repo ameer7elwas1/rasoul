@@ -231,20 +231,38 @@ async function submitPayment() {
         if (result.success) {
             showAlert('تم إضافة الدفعة بنجاح', 'success');
             
+            const paymentId = result.data?.id || result.paymentId;
+            if (window.lastPaymentId !== undefined) {
+                window.lastPaymentId = paymentId;
+            }
             
             const modal = bootstrap.Modal.getInstance(document.getElementById('addPaymentModal'));
-            modal.hide();
             
+            const printBtn = document.getElementById('printReceiptBtn');
+            if (printBtn && paymentId) {
+                printBtn.style.display = 'inline-block';
+                printBtn.onclick = () => {
+                    if (typeof printPaymentReceipt === 'function') {
+                        printPaymentReceipt(paymentId);
+                    }
+                };
+            }
+            
+            if (paymentId && typeof printPaymentReceipt === 'function') {
+                setTimeout(() => {
+                    printPaymentReceipt(paymentId);
+                }, 500);
+            }
+            
+            modal.hide();
             
             await loadStudents();
             await loadPayments();
             await loadDashboardStats();
             
-            
             if (document.getElementById('installments').classList.contains('active')) {
                 const student = studentsData.find(s => s.id === studentId);
                 if (student) {
-                    
                     const { data, error } = await supabase
                         .from('students')
                         .select('*')
