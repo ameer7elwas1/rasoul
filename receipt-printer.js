@@ -14,6 +14,7 @@ async function printPaymentReceipt(paymentId) {
             throw new Error('Supabase غير متاح. يرجى التأكد من تحميل config.js');
         }
 
+        // جلب بيانات الدفعة
         const { data: payment, error: paymentError } = await supabase
             .from('payments')
             .select(`
@@ -29,17 +30,46 @@ async function printPaymentReceipt(paymentId) {
                     final_fee,
                     discount_amount,
                     discount_percentage,
-                    school_id,
-                    schools (
-                        id,
-                        name
-                    )
+                    school_id
                 )
             `)
             .eq('id', paymentId)
             .single();
 
+        if (paymentError) {
+            console.error('Supabase error:', paymentError);
+            throw new Error(`خطأ في جلب بيانات الدفعة: ${paymentError.message || 'خطأ غير معروف'}`);
+        }
+
+        if (!payment) {
+            throw new Error('لم يتم العثور على بيانات الدفعة');
+        }
+
+        if (!payment.students) {
+            throw new Error('لم يتم العثور على بيانات الطالب المرتبطة بهذه الدفعة');
+        }
+
         const student = payment.students;
+        
+        // جلب بيانات المدرسة بشكل منفصل
+        let school = { name: 'المدرسة' };
+        if (student.school_id) {
+            try {
+                const { data: schoolData, error: schoolError } = await supabase
+                    .from('schools')
+                    .select('id, name')
+                    .eq('id', student.school_id)
+                    .single();
+                
+                if (!schoolError && schoolData) {
+                    school = schoolData;
+                } else if (schoolError) {
+                    console.warn('خطأ في جلب بيانات المدرسة:', schoolError);
+                }
+            } catch (err) {
+                console.warn('خطأ في جلب بيانات المدرسة:', err);
+            }
+        }
         
         const paymentDate = new Date(payment.payment_date);
         const formattedDate = `${paymentDate.getDate()} / ${paymentDate.getMonth() + 1} / ${paymentDate.getFullYear()}`;
