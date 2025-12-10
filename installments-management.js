@@ -145,9 +145,23 @@ function showAddPaymentModal(studentId, installmentNumber) {
                             
                             <div class="mb-3">
                                 <label class="form-label">المبلغ المراد دفعه *</label>
-                                <input type="number" class="form-control" id="paymentAmount" 
-                                       max="${parseFloat(installment.amount) - parseFloat(installment.amount_paid || 0)}" 
-                                       min="0" step="1000" required>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="paymentAmount" 
+                                           max="${parseFloat(installment.amount) - parseFloat(installment.amount_paid || 0)}" 
+                                           min="0" step="1000" required
+                                           oninput="updatePaymentPreview()">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="setFullAmount()">
+                                        المبلغ الكامل
+                                    </button>
+                                </div>
+                                <small class="text-muted">يمكنك دفع المبلغ كاملاً أو جزئياً</small>
+                            </div>
+                            
+                            <div class="mb-3" id="paymentPreview" style="display: none;">
+                                <div class="alert alert-info">
+                                    <strong>معاينة الدفعة:</strong>
+                                    <div id="previewContent"></div>
+                                </div>
                             </div>
                             
                             <div class="mb-3">
@@ -181,8 +195,16 @@ function showAddPaymentModal(studentId, installmentNumber) {
                         <button type="button" class="btn btn-info" id="printReceiptBtn" onclick="printLastPaymentReceipt()" style="display: none;">
                             <i class="bi bi-printer"></i> طباعة الوصل
                         </button>
+                        <button type="button" class="btn btn-success" id="exportPDFBtn" onclick="exportLastPaymentPDF()" style="display: none;">
+                            <i class="bi bi-file-pdf"></i> تصدير PDF
+                        </button>
+                        <button type="button" class="btn btn-warning" id="sendWhatsAppBtn" onclick="sendPaymentWhatsApp()" style="display: none;">
+                            <i class="bi bi-whatsapp"></i> إرسال واتساب
+                        </button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                        <button type="button" class="btn btn-primary" onclick="submitPayment()">حفظ</button>
+                        <button type="button" class="btn btn-primary" onclick="submitPayment()">
+                            <i class="bi bi-check-circle"></i> حفظ وتسجيل الدفعة
+                        </button>
                     </div>
                 </div>
             </div>
@@ -201,6 +223,40 @@ function showAddPaymentModal(studentId, installmentNumber) {
     
     const modal = new bootstrap.Modal(document.getElementById('addPaymentModal'));
     modal.show();
+    
+    // إضافة مستمعات للأحداث
+    document.getElementById('paymentAmount')?.addEventListener('input', updatePaymentPreview);
+}
+
+// تحديث معاينة الدفعة
+function updatePaymentPreview() {
+    const amount = parseFloat(document.getElementById('paymentAmount')?.value || 0);
+    const installmentAmount = parseFloat(document.getElementById('paymentAmount')?.max || 0);
+    const preview = document.getElementById('paymentPreview');
+    const previewContent = document.getElementById('previewContent');
+    
+    if (!preview || !previewContent) return;
+    
+    if (amount > 0) {
+        preview.style.display = 'block';
+        const remaining = installmentAmount - amount;
+        previewContent.innerHTML = `
+            المبلغ المدفوع: <strong>${Utils.formatCurrency(amount)}</strong><br>
+            المبلغ المتبقي: <strong>${Utils.formatCurrency(remaining)}</strong><br>
+            ${remaining === 0 ? '<span class="text-success">✓ سيتم إكمال الدفعة</span>' : '<span class="text-warning">دفعة جزئية</span>'}
+        `;
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+// تعيين المبلغ الكامل
+function setFullAmount() {
+    const amountInput = document.getElementById('paymentAmount');
+    if (amountInput) {
+        amountInput.value = amountInput.max;
+        updatePaymentPreview();
+    }
 }
 
 
@@ -238,20 +294,41 @@ async function submitPayment() {
             
             const modal = bootstrap.Modal.getInstance(document.getElementById('addPaymentModal'));
             
-            const printBtn = document.getElementById('printReceiptBtn');
-            if (printBtn && paymentId) {
-                printBtn.style.display = 'inline-block';
-                printBtn.onclick = () => {
-                    if (typeof printPaymentReceipt === 'function') {
-                        printPaymentReceipt(paymentId);
-                    }
-                };
-            }
+            // حفظ paymentId للاستخدام لاحقاً
+            window.lastPaymentId = paymentId;
             
-            if (paymentId && typeof printPaymentReceipt === 'function') {
-                setTimeout(() => {
-                    printPaymentReceipt(paymentId);
-                }, 500);
+            const printBtn = document.getElementById('printReceiptBtn');
+            const exportBtn = document.getElementById('exportPDFBtn');
+            const whatsappBtn = document.getElementById('sendWhatsAppBtn');
+            
+            if (paymentId) {
+                if (printBtn) {
+                    printBtn.style.display = 'inline-block';
+                    printBtn.onclick = () => {
+                        if (typeof printPaymentReceipt === 'function') {
+                            printPaymentReceipt(paymentId);
+                        }
+                    };
+                }
+                
+                if (exportBtn) {
+                    exportBtn.style.display = 'inline-block';
+                    exportBtn.onclick = () => {
+                        if (typeof exportReceiptToPDF === 'function') {
+                            exportReceiptToPDF(paymentId);
+                        }
+                    };
+                }
+                
+                if (whatsappBtn) {
+                    whatsappBtn.style.display = 'inline-block';
+                    whatsappBtn.onclick = () => {
+                        sendPaymentConfirmationWhatsApp(studentId, paymentId);
+                    };
+                }
+                
+                // عرض نافذة تأكيد مع خيارات
+                showPaymentSuccessModal(paymentId, studentId);
             }
             
             modal.hide();
@@ -398,6 +475,89 @@ function showAddStudentModal() {
     calculateDiscount();
 }
 
+
+// عرض نافذة نجاح الدفع مع خيارات
+function showPaymentSuccessModal(paymentId, studentId) {
+    const modalHTML = `
+        <div class="modal fade" id="paymentSuccessModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-check-circle-fill"></i> تم تسجيل الدفعة بنجاح
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div class="mb-4">
+                            <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                        </div>
+                        <h4>تم تسجيل الدفعة بنجاح</h4>
+                        <p class="text-muted">ما الذي تريد فعله الآن؟</p>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="printPaymentReceipt('${paymentId}')">
+                                <i class="bi bi-printer"></i> طباعة الوصل
+                            </button>
+                            <button class="btn btn-info" onclick="exportReceiptToPDF('${paymentId}')">
+                                <i class="bi bi-file-pdf"></i> تصدير PDF
+                            </button>
+                            <button class="btn" style="background: #25D366; color: white;" onclick="sendPaymentConfirmationWhatsApp('${studentId}', '${paymentId}')">
+                                <i class="bi bi-whatsapp"></i> إرسال تأكيد واتساب
+                            </button>
+                            <button class="btn btn-secondary" data-bs-dismiss="modal">
+                                إغلاق
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    const existingModal = document.getElementById('paymentSuccessModal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modal = new bootstrap.Modal(document.getElementById('paymentSuccessModal'));
+    modal.show();
+}
+
+// إرسال تأكيد واتساب بعد الدفع
+async function sendPaymentConfirmationWhatsApp(studentId, paymentId) {
+    try {
+        const { data: payment } = await supabase
+            .from('payments')
+            .select(`
+                *,
+                students (
+                    *,
+                    schools (
+                        id,
+                        name
+                    )
+                )
+            `)
+            .eq('id', paymentId)
+            .single();
+        
+        if (!payment || !payment.students) {
+            showAlert('لم يتم العثور على بيانات الدفعة', 'danger');
+            return;
+        }
+        
+        const student = payment.students;
+        const result = await sendWhatsAppMessage(studentId, 'payment_confirmation', null);
+        
+        if (result.success) {
+            showAlert('تم فتح واتساب لإرسال التأكيد', 'success');
+        } else {
+            showAlert('خطأ: ' + result.error, 'danger');
+        }
+    } catch (error) {
+        console.error('خطأ في إرسال تأكيد واتساب:', error);
+        showAlert('حدث خطأ أثناء إرسال التأكيد', 'danger');
+    }
+}
 
 function calculateDiscount() {
     const siblingCount = parseInt(document.getElementById('siblingCount')?.value || 1);

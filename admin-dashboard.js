@@ -474,9 +474,7 @@ function viewStudent(studentId) {
     alert(`عرض تفاصيل الطالب: ${studentId}`);
 }
 
-function loadReports() {
-    document.getElementById('reportsContent').innerHTML = '<p>قريباً: التقارير</p>';
-}
+// loadReports الآن في reports-system.js
 
 function logout() {
     if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {

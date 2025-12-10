@@ -369,3 +369,189 @@ function viewPayment(paymentId) {
     printPaymentReceipt(paymentId);
 }
 
+// طباعة متقدمة مع خيارات
+async function printPaymentReceiptAdvanced(paymentId, options = {}) {
+    const {
+        showPrintDialog = true,
+        includeQRCode = false,
+        includeBarcode = false,
+        paperSize = 'A4',
+        orientation = 'portrait'
+    } = options;
+
+    const result = await printPaymentReceipt(paymentId);
+    
+    if (result.success && showPrintDialog) {
+        // النافذة ستفتح تلقائياً من printPaymentReceipt
+    }
+    
+    return result;
+}
+
+// تصدير PDF للوصل
+async function exportReceiptToPDF(paymentId) {
+    try {
+        if (typeof window.jsPDF === 'undefined') {
+            showAlert('مكتبة PDF غير متوفرة. يرجى تحميل الصفحة مرة أخرى.', 'warning');
+            return;
+        }
+
+        const { data: payment, error: paymentError } = await supabase
+            .from('payments')
+            .select(`
+                *,
+                students (
+                    id,
+                    name,
+                    guardian_name,
+                    mother_name,
+                    grade,
+                    phone,
+                    annual_fee,
+                    final_fee,
+                    discount_amount,
+                    discount_percentage,
+                    school_id,
+                    schools (
+                        id,
+                        name
+                    )
+                )
+            `)
+            .eq('id', paymentId)
+            .single();
+
+        if (paymentError) throw paymentError;
+        if (!payment || !payment.students) {
+            throw new Error('Payment or student data not found');
+        }
+
+        const student = payment.students;
+        const school = student.schools || { name: 'المدرسة' };
+        
+        const paymentDate = new Date(payment.payment_date);
+        const formattedDate = Utils.formatDateArabic(payment.payment_date);
+        
+        const receiptNumber = payment.receipt_number || payment.id.substring(0, 8).toUpperCase();
+        
+        const paymentMethodNames = {
+            'cash': 'نقد',
+            'bank_transfer': 'تحويل بنكي',
+            'check': 'شيك',
+            'other': 'أخرى'
+        };
+        
+        const paymentMethod = paymentMethodNames[payment.payment_method] || payment.payment_method;
+        
+        const installmentNames = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
+        const installmentName = installmentNames[payment.installment_number - 1] || `الدفعة ${payment.installment_number}`;
+
+        const { jsPDF } = window.jsPDF;
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        // إعداد الخط العربي
+        doc.setFont('helvetica');
+        
+        // العنوان
+        doc.setFontSize(20);
+        doc.setTextColor(15, 118, 110);
+        doc.text('مجموعة رسول الرحمة التعليمية', 105, 20, { align: 'center' });
+        
+        doc.setFontSize(16);
+        doc.setTextColor(0, 0, 0);
+        doc.text('وصل قبض', 105, 30, { align: 'center' });
+        
+        // معلومات الوصل
+        doc.setFontSize(10);
+        let yPos = 45;
+        
+        doc.text(`رقم الوصل: ${receiptNumber}`, 20, yPos);
+        doc.text(`التاريخ: ${formattedDate}`, 150, yPos);
+        
+        yPos += 10;
+        doc.line(20, yPos - 5, 190, yPos - 5);
+        
+        yPos += 10;
+        doc.setFontSize(12);
+        doc.text('استلمت من السيد ولي أمر الطالب:', 20, yPos);
+        doc.setFontSize(11);
+        doc.text(student.guardian_name, 20, yPos + 7);
+        
+        yPos += 15;
+        doc.setFontSize(12);
+        doc.text('اسم الطالب:', 20, yPos);
+        doc.setFontSize(11);
+        doc.text(student.name, 20, yPos + 7);
+        
+        yPos += 15;
+        doc.setFontSize(12);
+        doc.text('في الصف:', 20, yPos);
+        doc.setFontSize(11);
+        doc.text(student.grade, 20, yPos + 7);
+        
+        yPos += 15;
+        doc.setFontSize(12);
+        doc.text('المدرسة:', 20, yPos);
+        doc.setFontSize(11);
+        doc.text(school.name, 20, yPos + 7);
+        
+        yPos += 20;
+        doc.line(20, yPos - 5, 190, yPos - 5);
+        
+        // المبلغ
+        yPos += 10;
+        doc.setFontSize(14);
+        doc.text('مبلغاً قدره:', 20, yPos);
+        doc.setFontSize(18);
+        doc.setTextColor(15, 118, 110);
+        doc.text(Utils.formatCurrency(payment.amount), 105, yPos, { align: 'center' });
+        
+        yPos += 15;
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`وهو القسط: ${installmentName}`, 20, yPos);
+        
+        yPos += 10;
+        doc.text(`طريقة الدفع: ${paymentMethod}`, 20, yPos);
+        
+        if (payment.notes) {
+            yPos += 10;
+            doc.text(`الملاحظات: ${payment.notes}`, 20, yPos);
+        }
+        
+        yPos += 20;
+        doc.line(20, yPos - 5, 190, yPos - 5);
+        
+        // التوقيعات
+        yPos += 15;
+        doc.setFontSize(10);
+        doc.text('اسم المستلم:', 50, yPos);
+        doc.text('التوقيع:', 140, yPos);
+        
+        yPos += 10;
+        doc.line(50, yPos, 100, yPos);
+        doc.line(140, yPos, 190, yPos);
+        
+        // ملاحظات
+        yPos += 20;
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100);
+        doc.text('• يسقط حق المطالبة بالمبلغ بعد توقيع الوصل.', 20, yPos);
+        yPos += 7;
+        doc.text('• يرجى الاحتفاظ بهذا الوصل حتى نهاية العام الدراسي.', 20, yPos);
+        
+        // حفظ الملف
+        const fileName = `receipt_${receiptNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+        
+        return { success: true, fileName };
+    } catch (error) {
+        console.error('Error exporting receipt to PDF:', error);
+        return { success: false, error: error.message };
+    }
+}
+

@@ -409,17 +409,18 @@ function addPayment(studentId) {
 
 
 async function sendWhatsApp(studentId) {
-    const result = await sendWhatsAppReminder(studentId);
-    if (!result.success) {
-        showAlert(result.error || 'خطأ في إرسال رسالة واتساب', 'danger');
+    if (typeof showWhatsAppModal === 'function') {
+        showWhatsAppModal(studentId);
+    } else {
+        const result = await sendWhatsAppReminder(studentId);
+        if (!result.success) {
+            showAlert(result.error || 'خطأ في إرسال رسالة واتساب', 'danger');
+        }
     }
 }
 
 
-function loadReports() {
-    
-    document.getElementById('reportsContent').innerHTML = '<p>قريباً: التقارير</p>';
-}
+// loadReports الآن في reports-system.js
 
 
 
