@@ -301,8 +301,8 @@ function displayPayments(payments) {
                 <td>${getPaymentMethodName(payment.payment_method)}</td>
                 <td>${Utils.sanitizeHTML(payment.receipt_number || '-')}</td>
                 <td>
-                    <button class="btn btn-sm btn-info" onclick="viewPayment('${payment.id}')">
-                        <i class="bi bi-eye"></i>
+                    <button class="btn btn-sm btn-info" onclick="viewPayment('${payment.id}')" title="طباعة الوصل">
+                        <i class="bi bi-printer"></i>
                     </button>
                 </td>
             </tr>

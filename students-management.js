@@ -292,7 +292,7 @@ async function addPaymentToStudent(studentId, paymentData) {
             console.error('خطأ في إضافة سجل الدفع:', paymentError);
         }
 
-        return { success: true, data: payment };
+        return { success: true, data: payment, paymentId: payment?.id };
     } catch (error) {
         console.error('خطأ في إضافة الدفعة:', error);
         return { success: false, error: error.message };
