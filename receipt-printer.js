@@ -39,21 +39,7 @@ async function printPaymentReceipt(paymentId) {
             .eq('id', paymentId)
             .single();
 
-        if (paymentError) {
-            console.error('Supabase error:', paymentError);
-            throw new Error(`خطأ في جلب بيانات الدفعة: ${paymentError.message || 'خطأ غير معروف'}`);
-        }
-
-        if (!payment) {
-            throw new Error('لم يتم العثور على بيانات الدفعة');
-        }
-
-        if (!payment.students) {
-            throw new Error('لم يتم العثور على بيانات الطالب المرتبطة بهذه الدفعة');
-        }
-
         const student = payment.students;
-        const school = student.schools || { name: 'المدرسة' };
         
         const paymentDate = new Date(payment.payment_date);
         const formattedDate = `${paymentDate.getDate()} / ${paymentDate.getMonth() + 1} / ${paymentDate.getFullYear()}`;
