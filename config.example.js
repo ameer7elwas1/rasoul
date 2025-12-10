@@ -1,8 +1,3 @@
-// ============================================
-// Supabase Settings File - Example
-// ============================================
-// Copy this file to config.js and fill in the correct values
-
 const CONFIG = {
     SUPABASE: {
         URL: 'YOUR_SUPABASE_URL_HERE',
@@ -18,4 +13,3 @@ const CONFIG = {
         SIBLING_3_PLUS: 0.10  // 10%
     }
 };
-
