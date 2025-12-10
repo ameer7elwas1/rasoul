@@ -36,27 +36,45 @@ async function addStudent(studentData) {
         let detectedSiblings = [];
         
         try {
+            // جلب الإخوة بدون schools
             const { data: siblings, error: siblingsError } = await supabase
                 .from('students')
-                .select(`
-                    id, 
-                    name, 
-                    grade, 
-                    school_id,
-                    schools (
-                        id,
-                        name
-                    )
-                `)
+                .select('id, name, grade, school_id')
                 .eq('guardian_name', studentData.guardian_name.trim())
                 .eq('mother_name', studentData.mother_name.trim())
                 .neq('school_id', studentData.school_id)
                 .eq('is_active', true);
             
             if (!siblingsError && siblings && siblings.length > 0) {
-                detectedSiblings = siblings;
-                detectedSiblingCount = siblings.length + 1;
-                console.log(`تم اكتشاف ${siblings.length} أخ/أخت في المدارس والروضات للطالب الجديد`);
+                // جلب بيانات المدارس للإخوة
+                const schoolIds = [...new Set(siblings.map(s => s.school_id).filter(Boolean))];
+                const schoolsMap = {};
+                
+                if (schoolIds.length > 0) {
+                    const { data: schoolsData } = await supabase
+                        .from('schools')
+                        .select('id, name')
+                        .in('id', schoolIds);
+                    
+                    if (schoolsData) {
+                        schoolsData.forEach(school => {
+                            schoolsMap[school.id] = school;
+                        });
+                    }
+                }
+                
+                // ربط بيانات المدارس بالإخوة
+                detectedSiblings = siblings.map(sibling => {
+                    if (sibling.school_id && schoolsMap[sibling.school_id]) {
+                        sibling.schools = schoolsMap[sibling.school_id];
+                    } else {
+                        sibling.schools = { name: 'المدرسة' };
+                    }
+                    return sibling;
+                });
+                
+                detectedSiblingCount = detectedSiblings.length + 1;
+                console.log(`تم اكتشاف ${detectedSiblings.length} أخ/أخت في المدارس والروضات للطالب الجديد`);
             }
         } catch (error) {
             console.error('خطأ في البحث عن الإخوة:', error);
