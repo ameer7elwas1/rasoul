@@ -6,20 +6,37 @@
 
 async function loadUsers() {
     try {
+        // جلب بيانات المستخدمين بدون schools
         const { data, error } = await supabase
             .from('users')
-            .select(`
-                *,
-                schools (
-                    id,
-                    name
-                )
-            `)
+            .select('*')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
         
-        return { success: true, data: data || [] };
+        // جلب جميع المدارس مرة واحدة
+        const { data: schoolsData } = await supabase
+            .from('schools')
+            .select('id, name');
+        
+        const schoolsMap = {};
+        if (schoolsData) {
+            schoolsData.forEach(school => {
+                schoolsMap[school.id] = school;
+            });
+        }
+        
+        // ربط بيانات المدارس بالمستخدمين
+        const usersWithSchools = (data || []).map(user => {
+            if (user.school_id && schoolsMap[user.school_id]) {
+                user.schools = schoolsMap[user.school_id];
+            } else {
+                user.schools = null;
+            }
+            return user;
+        });
+        
+        return { success: true, data: usersWithSchools };
     } catch (error) {
         console.error('خطأ في تحميل المستخدمين:', error);
         return { success: false, error: error.message };
