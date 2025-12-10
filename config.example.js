@@ -10,7 +10,7 @@ const CONFIG = {
     },
     SECURITY: {
         MAX_LOGIN_ATTEMPTS: 5,
-        SESSION_TIMEOUT: 24 * 60 * 60 * 1000 // 24 ساعة بالميلي ثانية
+        SESSION_TIMEOUT: 24 * 60 * 60 * 1000
     },
     INSTALLMENT_COUNT: 4,
     DISCOUNTS: {
