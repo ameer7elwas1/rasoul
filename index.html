@@ -191,13 +191,7 @@
                 
                 const { data: user, error: fetchError } = await supabase
                     .from('users')
-                    .select(`
-                        *,
-                        schools (
-                            id,
-                            name
-                        )
-                    `)
+                    .select('*')
                     .eq('username', trimmedUsername)
                     .eq('is_active', true)
                     .single();
@@ -239,6 +233,24 @@
                     return false;
                 }
 
+                // Fetch school data separately if school_id exists
+                let schoolName = null;
+                if (user.school_id) {
+                    try {
+                        const { data: school, error: schoolError } = await supabase
+                            .from('schools')
+                            .select('id, name')
+                            .eq('id', user.school_id)
+                            .single();
+                        
+                        if (!schoolError && school) {
+                            schoolName = school.name;
+                        }
+                    } catch (error) {
+                        console.warn('Could not fetch school data:', error);
+                    }
+                }
+
                 
                 if (user.locked_until && new Date(user.locked_until) > new Date()) {
                     const lockTime = Math.ceil((new Date(user.locked_until) - new Date()) / 60000);
@@ -266,7 +278,7 @@
                     role: user.role,
                     is_admin: user.is_admin,
                     school_id: user.school_id,
-                    school_name: user.schools?.name || null
+                    school_name: schoolName
                 };
 
                 localStorage.setItem('user', JSON.stringify(userData));
