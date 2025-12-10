@@ -343,15 +343,10 @@ async function updateWhatsAppPreview() {
     }
     
     try {
+        // جلب بيانات الطالب بدون schools
         const { data: student } = await supabase
             .from('students')
-            .select(`
-                *,
-                schools (
-                    id,
-                    name
-                )
-            `)
+            .select('*')
             .eq('id', studentId)
             .single();
         
@@ -359,6 +354,27 @@ async function updateWhatsAppPreview() {
             preview.textContent = 'لم يتم العثور على بيانات الطالب';
             return;
         }
+        
+        // جلب بيانات المدرسة بشكل منفصل
+        let schoolName = 'المدرسة';
+        if (student.school_id) {
+            try {
+                const { data: schoolData } = await supabase
+                    .from('schools')
+                    .select('id, name')
+                    .eq('id', student.school_id)
+                    .single();
+                
+                if (schoolData) {
+                    schoolName = schoolData.name;
+                }
+            } catch (err) {
+                console.warn('خطأ في جلب بيانات المدرسة:', err);
+            }
+        }
+        
+        // إضافة بيانات المدرسة للطالب
+        student.schools = { name: schoolName };
         
         const status = calculateStudentStatus(student);
         let message;

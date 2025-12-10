@@ -212,22 +212,39 @@ function openSchool(schoolId) {
 
 async function loadAllStudents() {
     try {
+        // جلب بيانات الطلاب بدون schools
         const { data, error } = await supabase
             .from('students')
-            .select(`
-                *,
-                schools (
-                    id,
-                    name
-                )
-            `)
+            .select('*')
             .eq('is_active', true)
             .order('created_at', { ascending: false })
             .limit(500);
 
         if (error) throw error;
         
-        studentsData = data || [];
+        // جلب جميع المدارس مرة واحدة
+        const { data: schoolsData } = await supabase
+            .from('schools')
+            .select('id, name');
+        
+        const schoolsMap = {};
+        if (schoolsData) {
+            schoolsData.forEach(school => {
+                schoolsMap[school.id] = school;
+            });
+        }
+        
+        // ربط بيانات المدارس بالطلاب
+        const studentsWithSchools = (data || []).map(student => {
+            if (student.school_id && schoolsMap[student.school_id]) {
+                student.schools = schoolsMap[student.school_id];
+            } else {
+                student.schools = { name: 'المدرسة' };
+            }
+            return student;
+        });
+        
+        studentsData = studentsWithSchools;
         displayAllStudents(studentsData);
     } catch (error) {
         console.error('خطأ في تحميل الطلاب:', error);

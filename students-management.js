@@ -349,45 +349,48 @@ function calculateStudentStatus(student) {
 async function sendWhatsAppReminder(studentId, message = null) {
     try {
         const currentUser = getCurrentUser();
+        // جلب بيانات الطالب بدون schools
         const { data: student, error } = await supabase
             .from('students')
-            .select(`
-                *,
-                schools (
-                    id,
-                    name
-                )
-            `)
+            .select('*')
             .eq('id', studentId)
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('خطأ في جلب بيانات الطالب:', error);
+            throw error;
+        }
+
+        if (!student) {
+            throw new Error('لم يتم العثور على بيانات الطالب');
+        }
 
         if (!student.phone) {
             return { success: false, error: 'لا يوجد رقم هاتف للطالب' };
         }
 
-        const status = calculateStudentStatus(student);
-        
+        // جلب بيانات المدرسة بشكل منفصل
         let schoolName = 'المدرسة';
         if (student.school_id) {
-            if (student.schools && student.schools.name) {
-                schoolName = student.schools.name;
-            } else {
-                try {
-                    const { data: schoolData } = await supabase
-                        .from('schools')
-                        .select('name')
-                        .eq('id', student.school_id)
-                        .single();
-                    if (schoolData && schoolData.name) {
-                        schoolName = schoolData.name;
-                    }
-                } catch (err) {
-                    console.error('خطأ في جلب اسم المدرسة:', err);
+            try {
+                const { data: schoolData, error: schoolError } = await supabase
+                    .from('schools')
+                    .select('id, name')
+                    .eq('id', student.school_id)
+                    .single();
+                
+                if (!schoolError && schoolData) {
+                    schoolName = schoolData.name;
                 }
+            } catch (err) {
+                console.warn('خطأ في جلب بيانات المدرسة:', err);
             }
         }
+        
+        // إضافة بيانات المدرسة للطالب
+        student.schools = { name: schoolName };
+
+        const status = calculateStudentStatus(student);
         
         if (!message) {
             const installments = Array.isArray(student.installments) ? student.installments : [];
