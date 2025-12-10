@@ -178,6 +178,9 @@ function showAddPaymentModal(studentId, installmentNumber) {
                         </form>
                     </div>
                     <div class="modal-footer">
+                        <button type="button" class="btn btn-info" id="printReceiptBtn" onclick="printLastPaymentReceipt()" style="display: none;">
+                            <i class="bi bi-printer"></i> طباعة الوصل
+                        </button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
                         <button type="button" class="btn btn-primary" onclick="submitPayment()">حفظ</button>
                     </div>
