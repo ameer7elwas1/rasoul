@@ -1,7 +1,7 @@
 // ============================================
-// ملف إعدادات Supabase - مثال
+// Supabase Settings File - Example
 // ============================================
-// انسخ هذا الملف إلى config.js واملأ القيم الصحيحة
+// Copy this file to config.js and fill in the correct values
 
 const CONFIG = {
     SUPABASE: {
