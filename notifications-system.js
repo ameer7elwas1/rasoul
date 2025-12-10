@@ -1,8 +1,8 @@
-// ============================================
+﻿// ============================================
 // Notifications System JavaScript
 // ============================================
 
-// عرض الإشعارات للمدرسة
+
 async function showNotifications() {
     try {
         const { data, error } = await supabase
@@ -48,16 +48,16 @@ async function showNotifications() {
             </div>
         `;
 
-        // إزالة النموذج السابق إن وجد
+        
         const existingModal = document.getElementById('notificationsModal');
         if (existingModal) {
             existingModal.remove();
         }
 
-        // إضافة النموذج الجديد
+        
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         
-        // عرض النموذج
+        
         const modal = new bootstrap.Modal(document.getElementById('notificationsModal'));
         modal.show();
     } catch (error) {
@@ -66,7 +66,7 @@ async function showNotifications() {
     }
 }
 
-// تحديد الإشعار كمقروء
+
 async function markNotificationRead(notificationId) {
     try {
         const { data: notification, error: fetchError } = await supabase
@@ -85,13 +85,13 @@ async function markNotificationRead(notificationId) {
             .update({ is_read_by: readBy })
             .eq('id', notificationId);
 
-        await loadNotifications(); // تحديث العداد
+        await loadNotifications(); 
     } catch (error) {
         console.error('خطأ في تحديد الإشعار كمقروء:', error);
     }
 }
 
-// الحصول على اسم نوع الإشعار
+
 function getNotificationTypeName(type) {
     const types = {
         'info': 'معلومات',
@@ -102,7 +102,7 @@ function getNotificationTypeName(type) {
     return types[type] || type;
 }
 
-// الحصول على لون نوع الإشعار
+
 function getNotificationTypeColor(type) {
     const colors = {
         'info': 'info',
@@ -113,7 +113,7 @@ function getNotificationTypeColor(type) {
     return colors[type] || 'info';
 }
 
-// إرسال إشعار من رئيس مجلس الإدارة
+
 async function sendNotificationToSchools(title, message, type = 'info', targetSchools = []) {
     try {
         const { data, error } = await supabase
@@ -138,7 +138,7 @@ async function sendNotificationToSchools(title, message, type = 'info', targetSc
     }
 }
 
-// عرض نموذج إرسال إشعار (لرئيس مجلس الإدارة)
+
 function showSendNotificationModal() {
     const modalHTML = `
         <div class="modal fade" id="sendNotificationModal" tabindex="-1">
@@ -191,21 +191,21 @@ function showSendNotificationModal() {
         </div>
     `;
 
-    // إزالة النموذج السابق إن وجد
+    
     const existingModal = document.getElementById('sendNotificationModal');
     if (existingModal) {
         existingModal.remove();
     }
 
-    // إضافة النموذج الجديد
+    
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     
-    // عرض النموذج
+    
     const modal = new bootstrap.Modal(document.getElementById('sendNotificationModal'));
     modal.show();
 }
 
-// إرسال الإشعار
+
 async function submitNotification() {
     const title = document.getElementById('notificationTitle').value.trim();
     const message = document.getElementById('notificationMessage').value.trim();
@@ -226,11 +226,11 @@ async function submitNotification() {
         if (result.success) {
             showAlert('تم إرسال الإشعار بنجاح', 'success');
             
-            // إغلاق النموذج
+            
             const modal = bootstrap.Modal.getInstance(document.getElementById('sendNotificationModal'));
             modal.hide();
             
-            // تحديث قائمة الإشعارات
+            
             await loadNotifications();
         } else {
             showAlert('خطأ في إرسال الإشعار: ' + result.error, 'danger');

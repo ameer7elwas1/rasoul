@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -149,7 +149,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script>
-        // تهيئة Supabase
+        
         const supabaseUrl = CONFIG?.SUPABASE?.URL || 'https://vpvvjascwgivdjyyhzwp.supabase.co';
         const supabaseKey = CONFIG?.SUPABASE?.ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwdnZqYXNjd2dpdmRqeXloendwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4MDYxMjYsImV4cCI6MjA2NTM4MjEyNn0.6AR2-MG4x9ugNTXe9jUqx-IwGEtj1m6MCYwQkTsSbUQ';
         
@@ -160,7 +160,7 @@
         
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // إضافة سجل
+        
         function addLog(message, type = 'info') {
             const logContainer = document.getElementById('logContainer');
             const timestamp = new Date().toLocaleTimeString('ar');
@@ -169,7 +169,7 @@
             logContainer.scrollTop = logContainer.scrollHeight;
         }
 
-        // عرض نتيجة
+        
         function showResult(stepId, success, message) {
             const stepCard = document.getElementById(stepId);
             const resultDiv = document.getElementById(stepId + 'Result');
@@ -183,7 +183,7 @@
             }
         }
 
-        // اختبار الاتصال
+        
         async function testConnection() {
             addLog('جاري اختبار الاتصال...', 'info');
             try {
@@ -203,7 +203,7 @@
             }
         }
 
-        // إنشاء المدارس
+        
         async function createSchools() {
             addLog('جاري إنشاء المدارس...', 'info');
             try {
@@ -236,11 +236,11 @@
             }
         }
 
-        // إنشاء حساب الرئيس
+        
         async function createAdmin() {
             addLog('جاري إنشاء حساب رئيس مجلس الإدارة...', 'info');
             try {
-                // استخدام RPC لتشفير كلمة المرور
+                
                 let passwordHash = 'master123'; // Fallback
                 const { data: hashedPassword, error: hashError } = await supabase.rpc('hash_password', {
                     password: 'master123'
@@ -280,7 +280,7 @@
             }
         }
 
-        // إنشاء حسابات المدارس
+        
         async function createSchoolUsers() {
             addLog('جاري إنشاء حسابات المدارس...', 'info');
             try {
@@ -294,7 +294,7 @@
 
                 let hasHashError = false;
                 for (const user of users) {
-                    // محاولة تشفير كلمة المرور
+                    
                     let passwordHash = user.password; // Fallback
                     const { data: hashedPassword, error: hashError } = await supabase.rpc('hash_password', {
                         password: user.password
@@ -333,7 +333,7 @@
             }
         }
 
-        // إنشاء الإعدادات
+        
         async function createSettings() {
             addLog('جاري إنشاء الإعدادات...', 'info');
             try {
@@ -371,7 +371,7 @@
             }
         }
 
-        // إعداد كل شيء
+        
         async function setupAll() {
             if (!confirm('هل أنت متأكد من إعداد قاعدة البيانات بالكامل؟')) {
                 return;
@@ -394,7 +394,7 @@
             showAlert('تم إعداد قاعدة البيانات بنجاح!', 'success');
         }
 
-        // عرض رسالة
+        
         function showAlert(message, type = 'info') {
             const alertContainer = document.getElementById('alertContainer');
             alertContainer.innerHTML = `
@@ -412,7 +412,7 @@
             }, 5000);
         }
 
-        // اختبار الاتصال تلقائياً عند التحميل
+        
         window.addEventListener('DOMContentLoaded', () => {
             testConnection();
         });

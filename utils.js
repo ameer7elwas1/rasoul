@@ -1,10 +1,10 @@
-// ============================================
+﻿// ============================================
 // Utilities JavaScript
 // ============================================
 // Last updated: 2025-01-27 - Added cleanPhone and buildWhatsAppURL
 
 const Utils = {
-    // تنسيق العملة
+    
     formatCurrency: function(amount) {
         if (amount === null || amount === undefined || isNaN(amount)) {
             return '0 د.ع';
@@ -13,7 +13,7 @@ const Utils = {
         return num.toLocaleString('ar-IQ') + ' د.ع';
     },
 
-    // تنظيف HTML لمنع XSS
+    
     sanitizeHTML: function(str) {
         if (!str) return '';
         const div = document.createElement('div');
@@ -21,7 +21,7 @@ const Utils = {
         return div.innerHTML;
     },
 
-    // تنسيق التاريخ بالعربية
+    
     formatDateArabic: function(dateString) {
         if (!dateString) return '-';
         
@@ -42,7 +42,7 @@ const Utils = {
         }
     },
 
-    // تنسيق التاريخ القصير
+    
     formatDateShort: function(dateString) {
         if (!dateString) return '-';
         
@@ -60,121 +60,121 @@ const Utils = {
         }
     },
 
-    // التحقق من صحة البريد الإلكتروني
+    
     isValidEmail: function(email) {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return re.test(email);
     },
 
-    // التحقق من صحة رقم الهاتف
+    
     isValidPhone: function(phone) {
         const re = /^[0-9+\-\s()]+$/;
         return re.test(phone);
     },
 
-    // التحقق من صحة الاسم (للطلاب والأشخاص)
+    
     validateName: function(name) {
         if (!name || typeof name !== 'string') return false;
         const trimmed = name.trim();
         return trimmed.length >= 2 && trimmed.length <= 200;
     },
 
-    // التحقق من صحة رقم الهاتف (مع التحقق من الطول)
+    
     validatePhone: function(phone) {
         if (!phone || typeof phone !== 'string') return false;
         const trimmed = phone.trim();
-        // يجب أن يكون على الأقل 8 أرقام وأن يحتوي فقط على أرقام ورموز مسموحة
+        
         const re = /^[0-9+\-\s()]+$/;
         const digitsOnly = trimmed.replace(/[^0-9]/g, '');
         return re.test(trimmed) && digitsOnly.length >= 8;
     },
 
-    // التحقق من صحة اسم المستخدم
+    
     validateUsername: function(username) {
         if (!username || typeof username !== 'string') return false;
         const trimmed = username.trim().toLowerCase();
-        // يجب أن يكون بين 3-50 حرف، فقط أحرف صغيرة وأرقام وشرطة سفلية
+        
         const re = /^[a-z0-9_]+$/;
         return trimmed.length >= 3 && trimmed.length <= 50 && re.test(trimmed);
     },
 
-    // التحقق من صحة كلمة المرور
+    
     validatePassword: function(password) {
         if (!password || typeof password !== 'string') return false;
-        // يجب أن تكون 6 أحرف على الأقل
+        
         return password.length >= 6;
     },
 
-    // تنظيف رقم الهاتف (إزالة المسافات والأحرف غير الضرورية)
+    
     cleanPhone: function(phone) {
         if (!phone || typeof phone !== 'string') return null;
         
-        // إزالة جميع المسافات والأحرف غير الرقمية باستثناء + في البداية
+        
         let cleaned = phone.trim();
         
-        // إزالة المسافات
+        
         cleaned = cleaned.replace(/\s/g, '');
         
-        // إزالة الأقواس
+        
         cleaned = cleaned.replace(/[()]/g, '');
         
-        // إزالة الشرطات
+        
         cleaned = cleaned.replace(/-/g, '');
         
-        // إذا كان فارغاً بعد التنظيف
+        
         if (!cleaned) return null;
         
-        // إزالة + من البداية للتحقق
+        
         const withoutPlus = cleaned.startsWith('+') ? cleaned.substring(1) : cleaned;
         
-        // التحقق من وجود كود الدولة 964 مكرر
+        
         if (withoutPlus.startsWith('964964')) {
-            // إزالة التكرار
+            
             cleaned = '+' + withoutPlus.substring(3);
             return cleaned;
         }
         
-        // إذا كان يبدأ بـ +، نتركه كما هو (بعد التحقق من التكرار)
+        
         if (cleaned.startsWith('+')) {
             return cleaned;
         }
         
-        // إذا كان يبدأ بـ 00، نستبدله بـ +
+        
         if (cleaned.startsWith('00')) {
             const without00 = cleaned.substring(2);
-            // التحقق من عدم وجود 964 مكرر
+            
             if (without00.startsWith('964964')) {
                 return '+' + without00.substring(3);
             }
             return '+' + without00;
         }
         
-        // إذا كان يبدأ بـ 0، نستبدله بـ 964 (كود العراق)
+        
         if (cleaned.startsWith('0')) {
             const without0 = cleaned.substring(1);
-            // التحقق من عدم وجود 964 مكرر
+            
             if (without0.startsWith('964')) {
                 return '+' + without0;
             }
             return '964' + without0;
         }
         
-        // إذا كان يبدأ بـ 964، نضيف + في البداية
+        
         if (cleaned.startsWith('964')) {
-            // التحقق من عدم وجود 964 مكرر
+            
             if (cleaned.startsWith('964964')) {
                 return '+' + cleaned.substring(3);
             }
             return '+' + cleaned;
         }
         
-        // إذا كان رقم عادي بدون كود دولة، نضيف 964
-        // لكن فقط إذا كان طوله مناسب (عادة 9-10 أرقام للعراق)
+        
+        
         if (/^\d{9,10}$/.test(cleaned)) {
             return '964' + cleaned;
         }
         
-        // في حالة أخرى، نعيد الرقم كما هو (لكن نزيل التكرار إذا كان موجوداً)
+        
         if (cleaned.startsWith('964964')) {
             return '+' + cleaned.substring(3);
         }
@@ -182,23 +182,23 @@ const Utils = {
         return cleaned;
     },
 
-    // بناء رابط واتساب
+    
     buildWhatsAppURL: function(phone, message = '') {
         if (!phone) return null;
-        // تنظيف رقم الهاتف
+        
         const cleanedPhone = this.cleanPhone(phone);
         if (!cleanedPhone) return null;
         
-        // تنسيق الرسالة
+        
         const encodedMessage = encodeURIComponent(message || '');
         
-        // بناء رابط واتساب
-        // تنسيق: https://wa.me/964XXXXXXXXXX?text=message
-        // أو: https://api.whatsapp.com/send?phone=964XXXXXXXXXX&text=message
+        
+        
+        
         return `https://wa.me/${cleanedPhone}${encodedMessage ? '?text=' + encodedMessage : ''}`;
     },
 
-    // نسخ إلى الحافظة
+    
     copyToClipboard: function(text) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(() => {
@@ -207,7 +207,7 @@ const Utils = {
                 return false;
             });
         } else {
-            // Fallback للأنظمة القديمة
+            // Fallback for older systems
             const textArea = document.createElement('textarea');
             textArea.value = text;
             textArea.style.position = 'fixed';
@@ -225,9 +225,9 @@ const Utils = {
         }
     },
 
-    // إظهار رسالة نجاح
+    
     showSuccess: function(message) {
-        // يمكن استخدام Bootstrap toast أو alert
+        
         if (typeof showAlert === 'function') {
             showAlert(message, 'success');
         } else {
@@ -235,7 +235,7 @@ const Utils = {
         }
     },
 
-    // إظهار رسالة خطأ
+    
     showError: function(message) {
         if (typeof showAlert === 'function') {
             showAlert(message, 'danger');
@@ -245,13 +245,13 @@ const Utils = {
     }
 };
 
-// التحقق من تحميل الدوال المهمة
+
 if (typeof Utils !== 'undefined') {
-    // التحقق من وجود cleanPhone
+    
     if (typeof Utils.cleanPhone !== 'function') {
         console.error('Utils.cleanPhone is not defined!');
     }
-    // التحقق من وجود buildWhatsAppURL
+    
     if (typeof Utils.buildWhatsAppURL !== 'function') {
         console.error('Utils.buildWhatsAppURL is not defined!');
     }

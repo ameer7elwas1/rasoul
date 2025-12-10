@@ -1,9 +1,9 @@
-// ============================================
+﻿// ============================================
 // Users Management JavaScript
-// إدارة المستخدمين - فقط لرئيس مجلس الإدارة
+
 // ============================================
 
-// تحميل المستخدمين
+
 async function loadUsers() {
     try {
         const { data, error } = await supabase
@@ -26,7 +26,7 @@ async function loadUsers() {
     }
 }
 
-// عرض المستخدمين
+
 function displayUsers(users) {
     const tbody = document.getElementById('usersTableBody');
     
@@ -79,7 +79,7 @@ function displayUsers(users) {
     }).join('');
 }
 
-// عرض نموذج إضافة مستخدم
+
 function showAddUserModal() {
     const modalHTML = `
         <div class="modal fade" id="addUserModal" tabindex="-1">
@@ -166,7 +166,7 @@ function showAddUserModal() {
     updateRoleOptions();
 }
 
-// تحديث خيارات الدور
+
 function updateRoleOptions() {
     const role = document.getElementById('newRole').value;
     const schoolSelect = document.getElementById('newSchoolId');
@@ -179,7 +179,7 @@ function updateRoleOptions() {
     }
 }
 
-// إضافة مستخدم جديد
+
 async function submitNewUser() {
     const username = document.getElementById('newUsername').value.trim().toLowerCase();
     const fullName = document.getElementById('newFullName').value.trim();
@@ -189,7 +189,7 @@ async function submitNewUser() {
     const role = document.getElementById('newRole').value;
     const isActive = document.getElementById('newIsActive').checked;
 
-    // التحقق من البيانات
+    
     if (!Utils.validateUsername(username)) {
         showAlert('اسم المستخدم غير صحيح', 'danger');
         return;
@@ -206,7 +206,7 @@ async function submitNewUser() {
     }
 
     try {
-        // تشفير كلمة المرور
+        
         const { data: hashedPassword, error: hashError } = await supabase.rpc('hash_password', {
             password: password
         });
@@ -250,7 +250,7 @@ async function submitNewUser() {
     }
 }
 
-// تعديل مستخدم
+
 async function editUser(userId) {
     try {
         const { data: user, error } = await supabase
@@ -344,7 +344,7 @@ async function editUser(userId) {
     }
 }
 
-// حفظ تعديل المستخدم
+
 async function submitEditUser() {
     const userId = parseInt(document.getElementById('editUserId').value);
     const fullName = document.getElementById('editFullName').value.trim();
@@ -381,7 +381,7 @@ async function submitEditUser() {
     }
 }
 
-// تعطيل/تفعيل مستخدم
+
 async function toggleUserStatus(userId, currentStatus) {
     const action = currentStatus ? 'تعطيل' : 'تفعيل';
     
@@ -408,7 +408,7 @@ async function toggleUserStatus(userId, currentStatus) {
     }
 }
 
-// حذف مستخدم
+
 async function deleteUser(userId) {
     if (!confirm('هل أنت متأكد من حذف هذا المستخدم؟ لا يمكن التراجع عن هذه العملية.')) {
         return;
@@ -430,7 +430,7 @@ async function deleteUser(userId) {
     }
 }
 
-// إعادة تعيين كلمة المرور
+
 async function resetPassword(userId) {
     const newPassword = prompt('أدخل كلمة المرور الجديدة (6 أحرف على الأقل):');
     
@@ -444,7 +444,7 @@ async function resetPassword(userId) {
     }
 
     try {
-        // تشفير كلمة المرور
+        
         const { data: hashedPassword, error: hashError } = await supabase.rpc('hash_password', {
             password: newPassword
         });
@@ -472,7 +472,7 @@ async function resetPassword(userId) {
     }
 }
 
-// تحميل قسم المستخدمين
+
 async function loadUsersSection() {
     try {
         const result = await loadUsers();

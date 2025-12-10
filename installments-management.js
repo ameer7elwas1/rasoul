@@ -1,8 +1,8 @@
-// ============================================
+﻿// ============================================
 // Installments Management JavaScript
 // ============================================
 
-// عرض الأقساط للطالب
+
 function displayStudentInstallments(student) {
     const container = document.getElementById('installmentsContent');
     
@@ -102,7 +102,7 @@ function displayStudentInstallments(student) {
     `;
 }
 
-// عرض نموذج إضافة دفعة
+
 function showAddPaymentModal(studentId, installmentNumber) {
     const student = studentsData.find(s => s.id === studentId);
     if (!student) return;
@@ -186,21 +186,21 @@ function showAddPaymentModal(studentId, installmentNumber) {
         </div>
     `;
 
-    // إزالة النموذج السابق إن وجد
+    
     const existingModal = document.getElementById('addPaymentModal');
     if (existingModal) {
         existingModal.remove();
     }
 
-    // إضافة النموذج الجديد
+    
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     
-    // عرض النموذج
+    
     const modal = new bootstrap.Modal(document.getElementById('addPaymentModal'));
     modal.show();
 }
 
-// إرسال الدفعة
+
 async function submitPayment() {
     const studentId = document.getElementById('paymentStudentId').value;
     const installmentNumber = parseInt(document.getElementById('paymentInstallmentNumber').value);
@@ -228,20 +228,20 @@ async function submitPayment() {
         if (result.success) {
             showAlert('تم إضافة الدفعة بنجاح', 'success');
             
-            // إغلاق النموذج
+            
             const modal = bootstrap.Modal.getInstance(document.getElementById('addPaymentModal'));
             modal.hide();
             
-            // تحديث البيانات
+            
             await loadStudents();
             await loadPayments();
             await loadDashboardStats();
             
-            // إذا كان قسم الأقساط مفتوحاً، تحديثه
+            
             if (document.getElementById('installments').classList.contains('active')) {
                 const student = studentsData.find(s => s.id === studentId);
                 if (student) {
-                    // إعادة تحميل بيانات الطالب
+                    
                     const { data, error } = await supabase
                         .from('students')
                         .select('*')
@@ -262,7 +262,7 @@ async function submitPayment() {
     }
 }
 
-// عرض نموذج إضافة طالب
+
 function showAddStudentModal() {
     const modalHTML = `
         <div class="modal fade" id="addStudentModal" tabindex="-1">
@@ -360,24 +360,24 @@ function showAddStudentModal() {
         </div>
     `;
 
-    // إزالة النموذج السابق إن وجد
+    
     const existingModal = document.getElementById('addStudentModal');
     if (existingModal) {
         existingModal.remove();
     }
 
-    // إضافة النموذج الجديد
+    
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     
-    // عرض النموذج
+    
     const modal = new bootstrap.Modal(document.getElementById('addStudentModal'));
     modal.show();
     
-    // حساب الخصم الأولي
+    
     calculateDiscount();
 }
 
-// حساب الخصم
+
 function calculateDiscount() {
     const siblingCount = parseInt(document.getElementById('siblingCount')?.value || 1);
     const annualFee = parseFloat(document.getElementById('annualFee')?.value || 0);
@@ -399,7 +399,7 @@ function calculateDiscount() {
     }
 }
 
-// إرسال بيانات الطالب
+
 async function submitStudent() {
     const studentData = {
         name: document.getElementById('studentName').value.trim(),
@@ -414,7 +414,7 @@ async function submitStudent() {
         notes: document.getElementById('studentNotes').value.trim()
     };
 
-    // التحقق من البيانات
+    
     if (!Utils.validateName(studentData.name)) {
         alert('يرجى إدخال اسم طالب صحيح');
         return;
@@ -431,7 +431,7 @@ async function submitStudent() {
         if (result.success) {
             let successMessage = 'تم إضافة الطالب بنجاح';
             
-            // إضافة رسالة عن اكتشاف الإخوة تلقائياً
+            
             if (result.siblingsInfo && result.siblingsInfo.length > 0) {
                 const siblingsDetails = result.siblingsInfo.map(s => {
                     return `${s.name} (${s.school})`;
@@ -447,11 +447,11 @@ async function submitStudent() {
             
             showAlert(successMessage, 'success');
             
-            // إغلاق النموذج
+            
             const modal = bootstrap.Modal.getInstance(document.getElementById('addStudentModal'));
             modal.hide();
             
-            // تحديث البيانات
+            
             await loadStudents();
             await loadDashboardStats();
         } else {

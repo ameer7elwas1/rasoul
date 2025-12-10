@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -115,7 +115,7 @@
     <script src="config.js"></script>
     <script src="utils.js?v=20250127"></script>
     <script>
-        // تهيئة Supabase
+        
         const supabaseUrl = CONFIG?.SUPABASE?.URL || 'https://vpvvjascwgivdjyyhzwp.supabase.co';
         const supabaseKey = CONFIG?.SUPABASE?.ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwdnZqYXNjd2dpdmRqeXloendwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4MDYxMjYsImV4cCI6MjA2NTM4MjEyNn0.6AR2-MG4x9ugNTXe9jUqx-IwGEtj1m6MCYwQkTsSbUQ';
         
@@ -126,11 +126,11 @@
         
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // متغيرات عامة
+        
         let loginAttempts = 0;
         const maxAttempts = CONFIG.SECURITY.MAX_LOGIN_ATTEMPTS;
 
-        // عرض رسالة
+        
         function showAlert(message, type = 'danger') {
             const alertContainer = document.getElementById('alertContainer');
             alertContainer.innerHTML = `
@@ -148,17 +148,17 @@
             }, 5000);
         }
 
-        // تشفير كلمة المرور (bcrypt simulation - في الإنتاج يجب استخدام Supabase Auth)
+        
         async function hashPassword(password) {
-            // في الإنتاج، استخدم Supabase Auth أو bcrypt على الخادم
-            // هنا نستخدم طريقة بسيطة للتحقق
-            return password; // للاختبار فقط
+            
+            
+            return password; 
         }
 
-        // التحقق من كلمة المرور
+        
         async function verifyPassword(password, hash) {
-            // في الإنتاج، استخدم Supabase Auth أو verify_password function من PostgreSQL
-            // هنا نستخدم طريقة بسيطة للتحقق
+            
+            
             const response = await supabase.rpc('verify_password', {
                 password: password,
                 hash: hash
@@ -172,10 +172,10 @@
             return response.data;
         }
 
-        // تسجيل الدخول
+        
         async function login(username, password) {
             try {
-                // البحث عن المستخدم مع معلومات المدرسة
+                
                 const { data: users, error: fetchError } = await supabase
                     .from('users')
                     .select(`
@@ -199,7 +199,7 @@
                     return false;
                 }
 
-                // التحقق من كلمة المرور
+                
                 const isValid = await verifyPassword(password, users.password_hash);
                 
                 if (!isValid) {
@@ -212,14 +212,14 @@
                     return false;
                 }
 
-                // التحقق من القفل
+                
                 if (users.locked_until && new Date(users.locked_until) > new Date()) {
                     const lockTime = Math.ceil((new Date(users.locked_until) - new Date()) / 60000);
                     showAlert(`الحساب مقفل. يرجى المحاولة بعد ${lockTime} دقيقة`, 'warning');
                     return false;
                 }
 
-                // تحديث معلومات تسجيل الدخول
+                
                 await supabase
                     .from('users')
                     .update({
@@ -230,7 +230,7 @@
                     })
                     .eq('id', users.id);
 
-                // حفظ معلومات المستخدم في localStorage
+                
                 const userData = {
                     id: users.id,
                     username: users.username,
@@ -244,10 +244,10 @@
                 localStorage.setItem('user', JSON.stringify(userData));
                 localStorage.setItem('loginTime', new Date().toISOString());
 
-                // إعادة تعيين محاولات الدخول
+                
                 loginAttempts = 0;
 
-                // توجيه المستخدم
+                
                 if (users.is_admin || users.role === 'admin') {
                     window.location.href = 'admin-dashboard.html';
                 } else if (users.school_id) {
@@ -264,7 +264,7 @@
             }
         }
 
-        // معالج تسجيل الدخول
+        
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -278,18 +278,18 @@
                 return;
             }
 
-            // عرض حالة التحميل
+            
             submitBtn.disabled = true;
             loading.classList.add('show');
 
             await login(username, password);
 
-            // إخفاء حالة التحميل
+            
             submitBtn.disabled = false;
             loading.classList.remove('show');
         });
 
-        // التحقق من الجلسة الحالية
+        
         window.addEventListener('DOMContentLoaded', () => {
             const userData = localStorage.getItem('user');
             const loginTime = localStorage.getItem('loginTime');

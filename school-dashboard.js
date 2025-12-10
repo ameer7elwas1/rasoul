@@ -1,21 +1,21 @@
-// ============================================
+﻿// ============================================
 // School Dashboard JavaScript
 // ============================================
 
-// تهيئة Supabase
+
 const supabaseUrl = CONFIG?.SUPABASE?.URL || 'https://vpvvjascwgivdjyyhzwp.supabase.co';
 const supabaseKey = CONFIG?.SUPABASE?.ANON_KEY || '';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// متغيرات عامة
+
 let currentUser = null;
 let currentSchool = null;
 let studentsData = [];
 let paymentsData = [];
 
-// تهيئة الصفحة
+
 document.addEventListener('DOMContentLoaded', async () => {
-    // التحقق من تسجيل الدخول
+    
     const userData = localStorage.getItem('user');
     if (!userData) {
         window.location.href = 'index.html';
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     currentUser = JSON.parse(userData);
     
-    // الحصول على معرف المدرسة من URL أو من بيانات المستخدم
+    
     const urlParams = new URLSearchParams(window.location.search);
     const schoolId = urlParams.get('school') || currentUser.school_id;
     
@@ -34,21 +34,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // تحميل بيانات المدرسة
+    
     await loadSchoolData(schoolId);
     
-    // تحديث معلومات المستخدم في الواجهة
+    
     document.getElementById('schoolName').textContent = currentSchool?.name || 'المدرسة';
     document.getElementById('userName').textContent = currentUser.full_name || currentUser.username;
 
-    // تحميل البيانات
+    
     await loadDashboardStats();
     await loadStudents();
     await loadPayments();
     await loadNotifications();
     await loadMessages();
 
-    // تحديث البيانات كل 30 ثانية
+    
     setInterval(async () => {
         await loadDashboardStats();
         await loadNotifications();
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 30000);
 });
 
-// تحميل بيانات المدرسة
+
 async function loadSchoolData(schoolId) {
     try {
         const { data, error } = await supabase
@@ -73,23 +73,23 @@ async function loadSchoolData(schoolId) {
     }
 }
 
-// عرض قسم معين
+
 function showSection(sectionId) {
-    // إخفاء جميع الأقسام
+    
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
     });
     
-    // إظهار القسم المحدد
+    
     document.getElementById(sectionId).classList.add('active');
     
-    // تحديث القائمة الجانبية
+    
     document.querySelectorAll('.sidebar-item').forEach(item => {
         item.classList.remove('active');
     });
     event.target.classList.add('active');
 
-    // تحميل بيانات القسم إذا لزم الأمر
+    
     if (sectionId === 'students') {
         loadStudents();
     } else if (sectionId === 'payments') {
@@ -101,7 +101,7 @@ function showSection(sectionId) {
     }
 }
 
-// تحميل إحصائيات لوحة التحكم
+
 async function loadDashboardStats() {
     try {
         const { data: students, error } = await supabase
@@ -122,7 +122,7 @@ async function loadDashboardStats() {
         students.forEach(student => {
             totalFees += parseFloat(student.final_fee || 0);
             
-            // حساب المدفوع
+            
             let paid = 0;
             if (student.installments && Array.isArray(student.installments)) {
                 student.installments.forEach(inst => {
@@ -132,7 +132,7 @@ async function loadDashboardStats() {
             
             totalPaid += paid;
             
-            // تحديد الحالة
+            
             if (paid >= parseFloat(student.final_fee || 0)) {
                 paidStudents++;
             } else if (paid > 0) {
@@ -142,7 +142,7 @@ async function loadDashboardStats() {
             }
         });
 
-        // تحديث الواجهة
+        
         document.getElementById('totalStudents').textContent = totalStudents;
         document.getElementById('paidStudents').textContent = paidStudents;
         document.getElementById('partialStudents').textContent = partialStudents;
@@ -155,7 +155,7 @@ async function loadDashboardStats() {
     }
 }
 
-// تحميل الطلاب
+
 async function loadStudents() {
     try {
         const { data, error } = await supabase
@@ -175,7 +175,7 @@ async function loadStudents() {
     }
 }
 
-// تحميل أقساط الطالب
+
 async function loadStudentInstallments() {
     const studentId = document.getElementById('studentSelect').value;
     if (!studentId) {
@@ -190,7 +190,7 @@ async function loadStudentInstallments() {
     }
 }
 
-// عرض الطلاب في الجدول
+
 function displayStudents(students) {
     const tbody = document.getElementById('studentsTableBody');
     
@@ -199,7 +199,7 @@ function displayStudents(students) {
         return;
     }
 
-    // تحديث قائمة اختيار الطلاب في قسم الأقساط
+    
     const studentSelect = document.getElementById('studentSelect');
     if (studentSelect) {
         studentSelect.innerHTML = '<option value="">اختر طالب لعرض أقساطه</option>' +
@@ -207,7 +207,7 @@ function displayStudents(students) {
     }
 
     tbody.innerHTML = students.map(student => {
-        // حساب المدفوع
+        
         let paid = 0;
         if (student.installments && Array.isArray(student.installments)) {
             student.installments.forEach(inst => {
@@ -253,10 +253,10 @@ function displayStudents(students) {
     }).join('');
 }
 
-// تحميل المدفوعات
+
 async function loadPayments() {
     try {
-        // الحصول على المدفوعات من جدول payments
+        
         const { data: payments, error: paymentsError } = await supabase
             .from('payments')
             .select(`
@@ -281,7 +281,7 @@ async function loadPayments() {
     }
 }
 
-// عرض المدفوعات
+
 function displayPayments(payments) {
     const tbody = document.getElementById('paymentsTableBody');
     
@@ -310,7 +310,7 @@ function displayPayments(payments) {
     }).join('');
 }
 
-// الحصول على اسم طريقة الدفع
+
 function getPaymentMethodName(method) {
     const methods = {
         'cash': 'نقدي',
@@ -321,7 +321,7 @@ function getPaymentMethodName(method) {
     return methods[method] || method;
 }
 
-// تحميل الإشعارات
+
 async function loadNotifications() {
     try {
         const { data, error } = await supabase
@@ -350,7 +350,7 @@ async function loadNotifications() {
     }
 }
 
-// تحميل الرسائل
+
 async function loadMessages() {
     try {
         const { data, error } = await supabase
@@ -377,25 +377,25 @@ async function loadMessages() {
     }
 }
 
-// عرض الإشعارات - تم نقله إلى notifications-system.js
-// عرض الرسائل - تم نقله إلى messages-system.js
 
-// عرض الطالب
+
+
+
 function viewStudent(studentId) {
     const student = studentsData.find(s => s.id === studentId);
     if (!student) return;
     
-    // عرض قسم الأقساط
+    
     showSection('installments');
     displayStudentInstallments(student);
 }
 
-// إضافة دفعة
+
 function addPayment(studentId) {
     const student = studentsData.find(s => s.id === studentId);
     if (!student) return;
     
-    // العثور على أول دفعة غير مدفوعة
+    
     const unpaidInstallment = student.installments?.find(inst => 
         parseFloat(inst.amount_paid || 0) < parseFloat(inst.amount || 0)
     );
@@ -407,7 +407,7 @@ function addPayment(studentId) {
     }
 }
 
-// إرسال رسالة واتساب
+
 async function sendWhatsApp(studentId) {
     const result = await sendWhatsAppReminder(studentId);
     if (!result.success) {
@@ -415,15 +415,15 @@ async function sendWhatsApp(studentId) {
     }
 }
 
-// تحميل التقارير
+
 function loadReports() {
-    // سيتم تنفيذها لاحقاً
+    
     document.getElementById('reportsContent').innerHTML = '<p>قريباً: التقارير</p>';
 }
 
-// تحميل الإعدادات - تم نقله إلى settings-page.js
 
-// تسجيل الخروج
+
+
 function logout() {
     if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
         localStorage.removeItem('user');
@@ -432,7 +432,7 @@ function logout() {
     }
 }
 
-// عرض رسالة
+
 function showAlert(message, type = 'info') {
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;

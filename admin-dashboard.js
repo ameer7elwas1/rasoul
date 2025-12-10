@@ -1,22 +1,18 @@
-// ============================================
+﻿// ============================================
 // Admin Dashboard JavaScript
 // ============================================
 
-// تهيئة Supabase
 const supabaseUrl = CONFIG?.SUPABASE?.URL || 'https://vpvvjascwgivdjyyhzwp.supabase.co';
 const supabaseKey = CONFIG?.SUPABASE?.ANON_KEY || '';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// متغيرات عامة
 let currentUser = null;
 let schoolsData = [];
 let studentsData = [];
 let conversationsData = [];
 let currentConversationId = null;
 
-// تهيئة الصفحة
 document.addEventListener('DOMContentLoaded', async () => {
-    // التحقق من تسجيل الدخول
     const userData = localStorage.getItem('user');
     if (!userData) {
         window.location.href = 'index.html';
@@ -31,25 +27,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // تحديث معلومات المستخدم في الواجهة
     document.getElementById('userName').textContent = currentUser.full_name || currentUser.username;
 
-    // تحميل البيانات
     await loadDashboardStats();
     await loadSchools();
     await loadAllStudents();
     await loadConversations();
     
-    // تحميل بيانات المدارس لإدارة المستخدمين
     schoolsData = (await supabase.from('schools').select('*').eq('is_active', true)).data || [];
 
-    // تحديث البيانات كل 30 ثانية
     setInterval(async () => {
         await loadDashboardStats();
         await loadConversations();
     }, 30000);
 
-    // إرسال الرسالة عند الضغط على Enter
     document.getElementById('messageInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             sendMessage();
@@ -57,23 +48,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-// عرض قسم معين
 function showSection(sectionId) {
-    // إخفاء جميع الأقسام
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
     });
     
-    // إظهار القسم المحدد
     document.getElementById(sectionId).classList.add('active');
     
-    // تحديث القائمة الجانبية
     document.querySelectorAll('.sidebar-item').forEach(item => {
         item.classList.remove('active');
     });
     event.target.classList.add('active');
 
-    // تحميل بيانات القسم إذا لزم الأمر
     if (sectionId === 'students') {
         loadAllStudents();
     } else if (sectionId === 'messages') {
@@ -89,7 +75,6 @@ function showSection(sectionId) {
     }
 }
 
-// تحميل إحصائيات لوحة التحكم
 async function loadDashboardStats() {
     try {
         const { data: schools, error } = await supabase
@@ -103,7 +88,6 @@ async function loadDashboardStats() {
         statsContainer.innerHTML = '';
 
         for (const school of schools) {
-            // الحصول على إحصائيات المدرسة
             const { data: students, error: studentsError } = await supabase
                 .from('students')
                 .select('*')
@@ -179,7 +163,6 @@ async function loadDashboardStats() {
     }
 }
 
-// تحميل المدارس
 async function loadSchools() {
     try {
         const { data, error } = await supabase
@@ -198,7 +181,6 @@ async function loadSchools() {
     }
 }
 
-// عرض المدارس
 function displaySchools(schools) {
     const container = document.getElementById('schoolsList');
     
@@ -224,12 +206,10 @@ function displaySchools(schools) {
     }).join('');
 }
 
-// فتح صفحة المدرسة
 function openSchool(schoolId) {
     window.open(`school-dashboard.html?school=${schoolId}`, '_blank');
 }
 
-// تحميل جميع الطلاب
 async function loadAllStudents() {
     try {
         const { data, error } = await supabase
@@ -255,7 +235,6 @@ async function loadAllStudents() {
     }
 }
 
-// عرض جميع الطلاب
 function displayAllStudents(students) {
     const tbody = document.getElementById('allStudentsTableBody');
     
@@ -299,7 +278,6 @@ function displayAllStudents(students) {
     }).join('');
 }
 
-// تحميل المحادثات
 async function loadConversations() {
     try {
         const { data, error } = await supabase
@@ -317,7 +295,6 @@ async function loadConversations() {
     }
 }
 
-// عرض المحادثات
 function displayConversations(conversations) {
     const container = document.getElementById('conversationsList');
     
@@ -348,14 +325,12 @@ function displayConversations(conversations) {
     }).join('');
 }
 
-// فتح محادثة
 async function openConversation(conversationId) {
     currentConversationId = conversationId;
     await loadConversationMessages(conversationId);
-    loadConversations(); // تحديث القائمة
+    loadConversations();
 }
 
-// تحميل رسائل المحادثة
 async function loadConversationMessages(conversationId) {
     try {
         const { data, error } = await supabase
@@ -386,10 +361,8 @@ async function loadConversationMessages(conversationId) {
             `;
         }).join('');
 
-        // التمرير للأسفل
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-        // تحديث حالة القراءة
         await supabase.rpc('mark_conversation_messages_read', {
             conv_id: conversationId,
             reader_id: 'admin'
@@ -399,7 +372,6 @@ async function loadConversationMessages(conversationId) {
     }
 }
 
-// إرسال رسالة
 async function sendMessage() {
     if (!currentConversationId) {
         alert('يرجى اختيار محادثة أولاً');
@@ -412,7 +384,6 @@ async function sendMessage() {
     if (!message) return;
 
     try {
-        // إرسال الرسالة
         const { data, error } = await supabase
             .from('conversation_messages')
             .insert({
@@ -433,7 +404,6 @@ async function sendMessage() {
     }
 }
 
-// تحميل الإشعارات
 async function loadNotifications() {
     try {
         const { data, error } = await supabase
@@ -480,7 +450,6 @@ async function loadNotifications() {
     }
 }
 
-// الحصول على اسم نوع الإشعار
 function getNotificationTypeName(type) {
     const types = {
         'info': 'معلومات',
@@ -491,7 +460,6 @@ function getNotificationTypeName(type) {
     return types[type] || type;
 }
 
-// الحصول على لون نوع الإشعار
 function getNotificationTypeColor(type) {
     const colors = {
         'info': 'info',
@@ -502,22 +470,14 @@ function getNotificationTypeColor(type) {
     return colors[type] || 'info';
 }
 
-// عرض نموذج إرسال إشعار - تم نقله إلى notifications-system.js
-
-// عرض الطالب
 function viewStudent(studentId) {
-    // سيتم تنفيذها لاحقاً
     alert(`عرض تفاصيل الطالب: ${studentId}`);
 }
 
-// تحميل التقارير
 function loadReports() {
     document.getElementById('reportsContent').innerHTML = '<p>قريباً: التقارير</p>';
 }
 
-// تحميل الإعدادات - تم نقله إلى settings-page.js
-
-// تسجيل الخروج
 function logout() {
     if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
         localStorage.removeItem('user');
@@ -526,7 +486,6 @@ function logout() {
     }
 }
 
-// عرض رسالة
 function showAlert(message, type = 'info') {
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;

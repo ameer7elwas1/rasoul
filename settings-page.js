@@ -1,11 +1,11 @@
-// ============================================
+﻿// ============================================
 // Settings Page JavaScript
 // ============================================
 
-// تحميل الإعدادات
+
 async function loadSettings() {
     try {
-        // تحميل الإعدادات العامة
+        
         const { data: settings, error } = await supabase
             .from('system_settings')
             .select('*')
@@ -16,7 +16,7 @@ async function loadSettings() {
         const settingsContent = document.getElementById('settingsContent');
         
         if (currentUser.is_admin || currentUser.role === 'admin') {
-            // إعدادات رئيس مجلس الإدارة
+            
             settingsContent.innerHTML = `
                 <div class="row">
                     <div class="col-md-6">
@@ -124,7 +124,7 @@ async function loadSettings() {
                 </div>
             `;
         } else {
-            // إعدادات المدرسة
+            
             settingsContent.innerHTML = `
                 <div class="card">
                     <div class="card-header bg-primary text-white">
@@ -169,7 +169,7 @@ async function loadSettings() {
     }
 }
 
-// حفظ الإعدادات (لرئيس مجلس الإدارة)
+
 async function saveSettings() {
     try {
         const settings = {
@@ -199,7 +199,7 @@ async function saveSettings() {
             }
         };
 
-        // حفظ كل إعداد
+        
         for (const [key, value] of Object.entries(settings)) {
             await supabase
                 .from('system_settings')
@@ -213,7 +213,7 @@ async function saveSettings() {
 
         showAlert('تم حفظ الإعدادات بنجاح', 'success');
         
-        // تحديث CONFIG محلياً
+        
         CONFIG.DEFAULT_FEES.KINDERGARTEN = settings.default_annual_fee_kindergarten.value;
         CONFIG.DEFAULT_FEES.ELEMENTARY = settings.default_annual_fee_elementary.value;
         CONFIG.DEFAULT_FEES.MIDDLE = settings.default_annual_fee_middle.value;
@@ -228,7 +228,7 @@ async function saveSettings() {
     }
 }
 
-// حفظ إعدادات المدرسة
+
 async function saveSchoolSettings() {
     try {
         const updates = {
@@ -247,7 +247,7 @@ async function saveSchoolSettings() {
 
         showAlert('تم حفظ إعدادات المدرسة بنجاح', 'success');
         
-        // تحديث بيانات المدرسة محلياً
+        
         currentSchool = { ...currentSchool, ...updates };
     } catch (error) {
         console.error('خطأ في حفظ إعدادات المدرسة:', error);

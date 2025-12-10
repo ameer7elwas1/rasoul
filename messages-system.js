@@ -1,15 +1,15 @@
-// ============================================
+﻿// ============================================
 // Messages System JavaScript
 // ============================================
 
-// عرض المحادثات للمدرسة
+
 async function showMessages() {
     try {
-        // إنشاء أو العثور على محادثة مع رئيس مجلس الإدارة
+        
         let conversation = await findOrCreateConversation('admin', currentSchool.id);
         
         if (!conversation) {
-            // إنشاء محادثة جديدة
+            
             const { data, error } = await supabase
                 .from('conversations')
                 .insert({
@@ -29,7 +29,7 @@ async function showMessages() {
             conversation = data;
         }
 
-        // عرض نافذة المحادثة
+        
         showConversationModal(conversation.id);
     } catch (error) {
         console.error('خطأ في عرض المحادثات:', error);
@@ -37,10 +37,10 @@ async function showMessages() {
     }
 }
 
-// العثور على محادثة أو إنشاء واحدة جديدة
+
 async function findOrCreateConversation(senderId, receiverId) {
     try {
-        // البحث عن محادثة موجودة
+        
         const { data, error } = await supabase
             .from('conversations')
             .select('*')
@@ -58,7 +58,7 @@ async function findOrCreateConversation(senderId, receiverId) {
     }
 }
 
-// عرض نافذة المحادثة
+
 function showConversationModal(conversationId) {
     const modalHTML = `
         <div class="modal fade" id="conversationModal" tabindex="-1">
@@ -89,24 +89,24 @@ function showConversationModal(conversationId) {
         </div>
     `;
 
-    // إزالة النموذج السابق إن وجد
+    
     const existingModal = document.getElementById('conversationModal');
     if (existingModal) {
         existingModal.remove();
     }
 
-    // إضافة النموذج الجديد
+    
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     
-    // عرض النموذج
+    
     const modal = new bootstrap.Modal(document.getElementById('conversationModal'));
     modal.show();
 
-    // تحميل الرسائل
+    
     loadConversationMessages(conversationId);
 }
 
-// تحميل رسائل المحادثة
+
 async function loadConversationMessages(conversationId) {
     try {
         const { data, error } = await supabase
@@ -137,10 +137,10 @@ async function loadConversationMessages(conversationId) {
             `;
         }).join('');
 
-        // التمرير للأسفل
+        
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-        // تحديث حالة القراءة
+        
         await supabase.rpc('mark_conversation_messages_read', {
             conv_id: conversationId,
             reader_id: currentSchool.id
@@ -150,7 +150,7 @@ async function loadConversationMessages(conversationId) {
     }
 }
 
-// إرسال رسالة في المحادثة
+
 async function sendConversationMessage(conversationId) {
     const messageInput = document.getElementById('conversationMessageInput');
     const message = messageInput.value.trim();
@@ -158,7 +158,7 @@ async function sendConversationMessage(conversationId) {
     if (!message) return;
 
     try {
-        // إرسال الرسالة
+        
         const { data, error } = await supabase
             .from('conversation_messages')
             .insert({
@@ -172,7 +172,7 @@ async function sendConversationMessage(conversationId) {
 
         messageInput.value = '';
         await loadConversationMessages(conversationId);
-        await loadMessages(); // تحديث العداد
+        await loadMessages(); 
     } catch (error) {
         console.error('خطأ في إرسال الرسالة:', error);
         showAlert('خطأ في إرسال الرسالة', 'danger');
