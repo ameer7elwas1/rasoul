@@ -4,6 +4,16 @@
 
 async function printPaymentReceipt(paymentId) {
     try {
+        // التحقق من وجود paymentId
+        if (!paymentId) {
+            throw new Error('رقم الدفعة غير موجود');
+        }
+
+        // التحقق من وجود supabase
+        if (typeof supabase === 'undefined') {
+            throw new Error('Supabase غير متاح. يرجى التأكد من تحميل config.js');
+        }
+
         const { data: payment, error: paymentError } = await supabase
             .from('payments')
             .select(`
@@ -29,9 +39,17 @@ async function printPaymentReceipt(paymentId) {
             .eq('id', paymentId)
             .single();
 
-        if (paymentError) throw paymentError;
-        if (!payment || !payment.students) {
-            throw new Error('Payment or student data not found');
+        if (paymentError) {
+            console.error('Supabase error:', paymentError);
+            throw new Error(`خطأ في جلب بيانات الدفعة: ${paymentError.message || 'خطأ غير معروف'}`);
+        }
+
+        if (!payment) {
+            throw new Error('لم يتم العثور على بيانات الدفعة');
+        }
+
+        if (!payment.students) {
+            throw new Error('لم يتم العثور على بيانات الطالب المرتبطة بهذه الدفعة');
         }
 
         const student = payment.students;
@@ -350,23 +368,74 @@ async function printPaymentReceipt(paymentId) {
             </html>
         `;
         
+        // التحقق من أن النافذة فتحت بنجاح
         const printWindow = window.open('', '_blank');
+        
+        if (!printWindow) {
+            throw new Error('فشل فتح نافذة الطباعة. يرجى السماح بالنوافذ المنبثقة في المتصفح');
+        }
+
         printWindow.document.write(receiptHTML);
         printWindow.document.close();
         
+        // انتظار تحميل المحتوى قبل الطباعة
+        printWindow.onload = () => {
+            setTimeout(() => {
+                try {
+                    printWindow.print();
+                } catch (printError) {
+                    console.error('Error in print dialog:', printError);
+                    printWindow.close();
+                    throw new Error('فشل فتح نافذة الطباعة');
+                }
+            }, 500);
+        };
+        
+        // Fallback في حالة عدم تحميل onload
         setTimeout(() => {
-            printWindow.print();
-        }, 250);
+            try {
+                if (printWindow.document.readyState === 'complete') {
+                    printWindow.print();
+                }
+            } catch (e) {
+                console.warn('Print fallback failed:', e);
+            }
+        }, 1000);
         
         return { success: true };
     } catch (error) {
         console.error('Error printing receipt:', error);
+        
+        // عرض رسالة خطأ للمستخدم
+        if (typeof showAlert === 'function') {
+            showAlert(`خطأ في طباعة الوصل: ${error.message}`, 'danger');
+        } else {
+            alert(`خطأ في طباعة الوصل: ${error.message}`);
+        }
+        
         return { success: false, error: error.message };
     }
 }
 
 function viewPayment(paymentId) {
     printPaymentReceipt(paymentId);
+}
+
+// دالة مساعدة للاستدعاء من onclick
+async function printPaymentReceiptAsync(paymentId) {
+    if (!paymentId) {
+        alert('رقم الدفعة غير موجود');
+        return;
+    }
+    
+    const result = await printPaymentReceipt(paymentId);
+    if (!result.success && result.error) {
+        if (typeof showAlert === 'function') {
+            showAlert(result.error, 'danger');
+        } else {
+            alert(result.error);
+        }
+    }
 }
 
 // طباعة متقدمة مع خيارات

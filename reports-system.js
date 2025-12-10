@@ -382,7 +382,7 @@ async function generatePaymentsReport() {
                                             <td>${methodNames[payment.payment_method] || payment.payment_method}</td>
                                             <td>${payment.receipt_number || '-'}</td>
                                             <td>
-                                                <button class="btn btn-sm btn-info" onclick="printPaymentReceipt('${payment.id}')">
+                                                <button class="btn btn-sm btn-info" onclick="printPaymentReceiptAsync('${payment.id}')">
                                                     <i class="bi bi-printer"></i>
                                                 </button>
                                             </td>

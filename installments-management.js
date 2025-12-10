@@ -306,7 +306,11 @@ async function submitPayment() {
                     printBtn.style.display = 'inline-block';
                     printBtn.onclick = () => {
                         if (typeof printPaymentReceipt === 'function') {
-                            printPaymentReceipt(paymentId);
+                            if (typeof printPaymentReceipt === 'function') {
+                                await printPaymentReceipt(paymentId);
+                            } else {
+                                showAlert('دالة الطباعة غير متوفرة', 'warning');
+                            }
                         }
                     };
                 }
@@ -495,7 +499,7 @@ function showPaymentSuccessModal(paymentId, studentId) {
                         <h4>تم تسجيل الدفعة بنجاح</h4>
                         <p class="text-muted">ما الذي تريد فعله الآن؟</p>
                         <div class="d-grid gap-2">
-                            <button class="btn btn-primary" onclick="printPaymentReceipt('${paymentId}')">
+                                                <button class="btn btn-primary" onclick="printPaymentReceiptAsync('${paymentId}')">
                                 <i class="bi bi-printer"></i> طباعة الوصل
                             </button>
                             <button class="btn btn-info" onclick="exportReceiptToPDF('${paymentId}')">
