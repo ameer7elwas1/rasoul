@@ -476,10 +476,27 @@ async function printPaymentReceiptAdvanced(paymentId, options = {}) {
 // تصدير PDF للوصل
 async function exportReceiptToPDF(paymentId) {
     try {
-        if (typeof window.jsPDF === 'undefined') {
-            showAlert('مكتبة PDF غير متوفرة. يرجى تحميل الصفحة مرة أخرى.', 'warning');
+        // التحقق من وجود مكتبة jsPDF
+        if (typeof window.jsPDF === 'undefined' && typeof window.jspdf === 'undefined') {
+            // محاولة تحميل المكتبة ديناميكياً
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+            script.onload = () => {
+                exportReceiptToPDF(paymentId);
+            };
+            script.onerror = () => {
+                if (typeof showAlert === 'function') {
+                    showAlert('فشل تحميل مكتبة PDF. يرجى تحديث الصفحة.', 'danger');
+                } else {
+                    alert('فشل تحميل مكتبة PDF. يرجى تحديث الصفحة.');
+                }
+            };
+            document.head.appendChild(script);
             return;
         }
+        
+        // استخدام المكتبة المتاحة
+        const jsPDF = window.jsPDF || window.jspdf;
 
         // جلب بيانات الدفعة
         const { data: payment, error: paymentError } = await supabase
@@ -550,8 +567,8 @@ async function exportReceiptToPDF(paymentId) {
         const installmentNames = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
         const installmentName = installmentNames[payment.installment_number - 1] || `الدفعة ${payment.installment_number}`;
 
-        const { jsPDF } = window.jsPDF;
-        const doc = new jsPDF({
+        const jsPDFLib = jsPDF.jsPDF || jsPDF;
+        const doc = new jsPDFLib({
             orientation: 'portrait',
             unit: 'mm',
             format: 'a4'

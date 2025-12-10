@@ -121,8 +121,25 @@ async function sendWhatsAppMessage(studentId, templateType = 'reminder', customM
         if (templateType === 'custom' && customMessage) {
             message = WhatsAppTemplates.custom(student, customMessage);
         } else if (templateType === 'payment_confirmation') {
-            // نحتاج payment object هنا
-            message = WhatsAppTemplates.reminder(student, status);
+            // جلب بيانات آخر دفعة للطالب
+            try {
+                const { data: lastPayment } = await supabase
+                    .from('payments')
+                    .select('*')
+                    .eq('student_id', studentId)
+                    .order('payment_date', { ascending: false })
+                    .limit(1)
+                    .single();
+                
+                if (lastPayment) {
+                    message = WhatsAppTemplates.payment_confirmation(student, lastPayment);
+                } else {
+                    message = WhatsAppTemplates.reminder(student, status);
+                }
+            } catch (err) {
+                console.warn('خطأ في جلب بيانات الدفعة:', err);
+                message = WhatsAppTemplates.reminder(student, status);
+            }
         } else if (templateType === 'welcome') {
             message = WhatsAppTemplates.welcome(student);
         } else {

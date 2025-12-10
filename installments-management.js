@@ -527,37 +527,86 @@ function showPaymentSuccessModal(paymentId, studentId) {
 // إرسال تأكيد واتساب بعد الدفع
 async function sendPaymentConfirmationWhatsApp(studentId, paymentId) {
     try {
-        const { data: payment } = await supabase
+        if (!paymentId) {
+            showAlert('رقم الدفعة غير موجود', 'danger');
+            return;
+        }
+
+        // جلب بيانات الدفعة
+        const { data: payment, error: paymentError } = await supabase
             .from('payments')
             .select(`
                 *,
                 students (
-                    *,
-                    schools (
-                        id,
-                        name
-                    )
+                    id,
+                    name,
+                    guardian_name,
+                    mother_name,
+                    grade,
+                    phone,
+                    annual_fee,
+                    final_fee,
+                    discount_amount,
+                    discount_percentage,
+                    school_id
                 )
             `)
             .eq('id', paymentId)
             .single();
         
-        if (!payment || !payment.students) {
+        if (paymentError) {
+            console.error('خطأ في جلب بيانات الدفعة:', paymentError);
+            showAlert('خطأ في جلب بيانات الدفعة: ' + paymentError.message, 'danger');
+            return;
+        }
+        
+        if (!payment) {
             showAlert('لم يتم العثور على بيانات الدفعة', 'danger');
             return;
         }
         
+        if (!payment.students) {
+            showAlert('لم يتم العثور على بيانات الطالب المرتبطة بهذه الدفعة', 'danger');
+            return;
+        }
+        
         const student = payment.students;
+        
+        // جلب بيانات المدرسة بشكل منفصل
+        let schoolName = 'المدرسة';
+        if (student.school_id) {
+            try {
+                const { data: schoolData, error: schoolError } = await supabase
+                    .from('schools')
+                    .select('id, name')
+                    .eq('id', student.school_id)
+                    .single();
+                
+                if (!schoolError && schoolData) {
+                    schoolName = schoolData.name;
+                }
+            } catch (err) {
+                console.warn('خطأ في جلب بيانات المدرسة:', err);
+            }
+        }
+        
+        // إضافة بيانات المدرسة للطالب
+        student.schools = { name: schoolName };
+        
+        // إنشاء رسالة التأكيد
+        const message = WhatsAppTemplates.payment_confirmation(student, payment);
+        
+        // إرسال الرسالة
         const result = await sendWhatsAppMessage(studentId, 'payment_confirmation', null);
         
         if (result.success) {
             showAlert('تم فتح واتساب لإرسال التأكيد', 'success');
         } else {
-            showAlert('خطأ: ' + result.error, 'danger');
+            showAlert('خطأ: ' + (result.error || 'خطأ غير معروف'), 'danger');
         }
     } catch (error) {
         console.error('خطأ في إرسال تأكيد واتساب:', error);
-        showAlert('حدث خطأ أثناء إرسال التأكيد', 'danger');
+        showAlert('حدث خطأ أثناء إرسال التأكيد: ' + error.message, 'danger');
     }
 }
 
