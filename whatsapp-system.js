@@ -97,23 +97,48 @@ async function sendWhatsAppMessage(studentId, templateType = 'reminder', customM
     try {
         const currentUser = getCurrentUser();
         
+        // جلب بيانات الطالب بدون schools
         const { data: student, error } = await supabase
             .from('students')
-            .select(`
-                *,
-                schools (
-                    id,
-                    name
-                )
-            `)
+            .select('*')
             .eq('id', studentId)
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('خطأ في جلب بيانات الطالب:', error);
+            throw new Error(`خطأ في جلب بيانات الطالب: ${error.message || 'خطأ غير معروف'}`);
+        }
+
+        if (!student) {
+            throw new Error('لم يتم العثور على بيانات الطالب');
+        }
 
         if (!student.phone) {
             return { success: false, error: 'لا يوجد رقم هاتف للطالب' };
         }
+
+        // جلب بيانات المدرسة بشكل منفصل
+        let schoolName = 'المدرسة';
+        if (student.school_id) {
+            try {
+                const { data: schoolData, error: schoolError } = await supabase
+                    .from('schools')
+                    .select('id, name')
+                    .eq('id', student.school_id)
+                    .single();
+                
+                if (!schoolError && schoolData) {
+                    schoolName = schoolData.name;
+                } else if (schoolError) {
+                    console.warn('خطأ في جلب بيانات المدرسة:', schoolError);
+                }
+            } catch (err) {
+                console.warn('خطأ في جلب بيانات المدرسة:', err);
+            }
+        }
+
+        // إضافة بيانات المدرسة للطالب
+        student.schools = { name: schoolName };
 
         const status = calculateStudentStatus(student);
         
