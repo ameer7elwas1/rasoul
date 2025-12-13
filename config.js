@@ -16,6 +16,11 @@ const CONFIG = {
         KINDERGARTEN: 1000000,
         ELEMENTARY: 1100000,
         MIDDLE: 1300000
+    },
+    WHATSAPP: {
+        AUTO_SEND: false,
+        REMINDER_DAYS: 7,
+        COUNTRY_CODE: '+964'
     }
 };
 const GRADES = {

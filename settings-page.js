@@ -68,7 +68,7 @@ async function loadSettings() {
                                 <div class="mb-3">
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" id="whatsappAutoSend" 
-                                               ${CONFIG.WHATSAPP.AUTO_SEND ? 'checked' : ''}>
+                                               ${CONFIG?.WHATSAPP?.AUTO_SEND ? 'checked' : ''}>
                                         <label class="form-check-label" for="whatsappAutoSend">
                                             إرسال إشعارات واتساب تلقائياً
                                         </label>
@@ -77,12 +77,12 @@ async function loadSettings() {
                                 <div class="mb-3">
                                     <label class="form-label">عدد الأيام قبل إرسال التذكير</label>
                                     <input type="number" class="form-control" id="reminderDays" 
-                                           value="${CONFIG.WHATSAPP.REMINDER_DAYS}" min="1" max="30">
+                                           value="${CONFIG?.WHATSAPP?.REMINDER_DAYS || 7}" min="1" max="30">
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">رمز الدولة</label>
                                     <input type="text" class="form-control" id="countryCode" 
-                                           value="${CONFIG.WHATSAPP.COUNTRY_CODE}">
+                                           value="${CONFIG?.WHATSAPP?.COUNTRY_CODE || '+964'}">
                                 </div>
                             </div>
                         </div>
@@ -202,6 +202,7 @@ async function saveSettings() {
         CONFIG.INSTALLMENT_COUNT = settings.default_installment_count.value;
         CONFIG.DISCOUNTS.SIBLING_2 = settings.sibling_discount_2.percentage / 100;
         CONFIG.DISCOUNTS.SIBLING_3_PLUS = settings.sibling_discount_3_plus.percentage / 100;
+        if (!CONFIG.WHATSAPP) CONFIG.WHATSAPP = {};
         CONFIG.WHATSAPP.AUTO_SEND = settings.whatsapp_auto_send.enabled;
         CONFIG.WHATSAPP.REMINDER_DAYS = settings.reminder_days.value;
     } catch (error) {
