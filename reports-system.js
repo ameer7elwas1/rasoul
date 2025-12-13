@@ -66,11 +66,17 @@ async function generateFinancialReport() {
         const output = document.getElementById('reportOutput');
         output.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
 
-        const { data: students, error } = await supabase
+        let query = supabase
             .from('students')
             .select('*')
-            .eq('school_id', currentSchool.id)
             .eq('is_active', true);
+
+        // إذا كان مدير مدرسة، فلنفلتر حسب المدرسة
+        if (typeof currentSchool !== 'undefined' && currentSchool && currentSchool.id) {
+            query = query.eq('school_id', currentSchool.id);
+        }
+
+        const { data: students, error } = await query;
 
         if (error) throw error;
 
@@ -210,12 +216,18 @@ async function generateStudentsReport() {
         const output = document.getElementById('reportOutput');
         output.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
 
-        const { data: students, error } = await supabase
+        let query = supabase
             .from('students')
             .select('*')
-            .eq('school_id', currentSchool.id)
             .eq('is_active', true)
             .order('name');
+
+        // إذا كان مدير مدرسة، فلنفلتر حسب المدرسة
+        if (typeof currentSchool !== 'undefined' && currentSchool && currentSchool.id) {
+            query = query.eq('school_id', currentSchool.id);
+        }
+
+        const { data: students, error } = await query;
 
         if (error) throw error;
 
@@ -281,7 +293,7 @@ async function generatePaymentsReport() {
         const output = document.getElementById('reportOutput');
         output.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
 
-        const { data: payments, error } = await supabase
+        let query = supabase
             .from('payments')
             .select(`
                 *,
@@ -292,8 +304,21 @@ async function generatePaymentsReport() {
                     school_id
                 )
             `)
-            .eq('students.school_id', currentSchool.id)
             .order('payment_date', { ascending: false });
+
+        // إذا كان مدير مدرسة، فلنفلتر حسب المدرسة
+        if (typeof currentSchool !== 'undefined' && currentSchool && currentSchool.id) {
+            query = query.eq('students.school_id', currentSchool.id);
+        }
+
+        const { data: payments, error } = await query;
+
+        // إذا كان مدير مدرسة، فلنفلتر حسب المدرسة
+        if (typeof currentSchool !== 'undefined' && currentSchool && currentSchool.id) {
+            query = query.eq('students.school_id', currentSchool.id);
+        }
+
+        const { data: payments, error } = await query;
 
         if (error) throw error;
 
@@ -400,11 +425,17 @@ async function generateOverdueReport() {
         const output = document.getElementById('reportOutput');
         output.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
 
-        const { data: students, error } = await supabase
+        let query = supabase
             .from('students')
             .select('*')
-            .eq('school_id', currentSchool.id)
             .eq('is_active', true);
+
+        // إذا كان مدير مدرسة، فلنفلتر حسب المدرسة
+        if (typeof currentSchool !== 'undefined' && currentSchool && currentSchool.id) {
+            query = query.eq('school_id', currentSchool.id);
+        }
+
+        const { data: students, error } = await query;
 
         if (error) throw error;
 
@@ -509,7 +540,8 @@ async function generateMonthlyReport() {
         const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
         const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
 
-        const { data: payments, error } = await supabase
+        // التحقق من السياق: رئيس مجلس الإدارة أم مدير مدرسة
+        let query = supabase
             .from('payments')
             .select(`
                 *,
@@ -519,10 +551,16 @@ async function generateMonthlyReport() {
                     school_id
                 )
             `)
-            .eq('students.school_id', currentSchool.id)
             .gte('payment_date', startDate)
-            .lte('payment_date', endDate)
-            .order('payment_date');
+            .lte('payment_date', endDate);
+
+        // إذا كان مدير مدرسة، فلنفلتر حسب المدرسة
+        if (typeof currentSchool !== 'undefined' && currentSchool && currentSchool.id) {
+            query = query.eq('students.school_id', currentSchool.id);
+        }
+        // إذا كان رئيس مجلس الإدارة، سيعرض جميع المدفوعات
+
+        const { data: payments, error } = await query.order('payment_date');
 
         if (error) throw error;
 
@@ -590,11 +628,17 @@ async function generateGradeReport() {
         const output = document.getElementById('reportOutput');
         output.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
 
-        const { data: students, error } = await supabase
+        let query = supabase
             .from('students')
             .select('*')
-            .eq('school_id', currentSchool.id)
             .eq('is_active', true);
+
+        // إذا كان مدير مدرسة، فلنفلتر حسب المدرسة
+        if (typeof currentSchool !== 'undefined' && currentSchool && currentSchool.id) {
+            query = query.eq('school_id', currentSchool.id);
+        }
+
+        const { data: students, error } = await query;
 
         if (error) throw error;
 
@@ -714,7 +758,7 @@ function generateCustomReport() {
                                 <label class="form-label">الصف</label>
                                 <select class="form-select" id="gradeFilter">
                                     <option value="">جميع الصفوف</option>
-                                    ${GRADES[currentSchool.id]?.map(g => `<option value="${g}">${g}</option>`).join('')}
+                                    ${(typeof currentSchool !== 'undefined' && currentSchool && currentSchool.id && GRADES[currentSchool.id]) ? GRADES[currentSchool.id].map(g => `<option value="${g}">${g}</option>`).join('') : ''}
                                 </select>
                             </div>
                             <div class="mb-3">

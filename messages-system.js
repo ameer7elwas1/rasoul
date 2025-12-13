@@ -6,7 +6,7 @@ async function showMessages() {
         }
         const { data: schools, error: schoolsError } = await supabase
             .from('schools')
-            .select('id, name, code, type')
+            .select('id, name, code')
             .order('name', { ascending: true });
         if (schoolsError) throw schoolsError;
         const { data: conversations, error: convError } = await supabase
@@ -103,7 +103,7 @@ function showNewConversationModal() {
                             <select class="form-select" id="receiverSelect">
                                 <option value="admin">رئيس مجلس الإدارة</option>
                                 ${window.allSchools.filter(s => s.id !== currentSchool.id).map(school => 
-                                    `<option value="${school.id}">${school.name} ${school.type === 'rawda' ? '(روضة)' : '(مدرسة)'}</option>`
+                                    `<option value="${school.id}">${school.name}</option>`
                                 ).join('')}
                             </select>
                             <small class="text-muted">يمكنك محادثة أي مدرسة أخرى أو رئيس مجلس الإدارة</small>
@@ -138,7 +138,7 @@ async function startNewConversation() {
             const school = window.allSchools.find(s => s.id === receiverId);
             if (school) {
                 receiverName = school.name;
-                receiverType = school.type === 'rawda' ? 'school' : 'school';
+                receiverType = 'school';
             }
         }
         let conversation = await findOrCreateConversation(currentSchool.id, receiverId);

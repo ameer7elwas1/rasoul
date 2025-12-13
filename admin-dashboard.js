@@ -310,7 +310,7 @@ async function showNewConversationModalAdmin() {
     try {
         const { data: schools, error } = await supabase
             .from('schools')
-            .select('id, name, type')
+            .select('id, name')
             .eq('is_active', true)
             .order('name', { ascending: true });
         
@@ -330,7 +330,7 @@ async function showNewConversationModalAdmin() {
                                 <select class="form-select" id="receiverSelectAdmin">
                                     <option value="">اختر مدرسة...</option>
                                     ${(schools || []).map(school => 
-                                        `<option value="${school.id}">${school.name} ${school.type === 'rawda' ? '(روضة)' : '(مدرسة)'}</option>`
+                                        `<option value="${school.id}">${school.name}</option>`
                                     ).join('')}
                                 </select>
                                 <small class="text-muted">يمكنك محادثة أي مدرسة</small>
@@ -366,7 +366,7 @@ async function startNewConversationAdmin() {
     try {
         const { data: school, error: schoolError } = await supabase
             .from('schools')
-            .select('id, name, type')
+            .select('id, name')
             .eq('id', receiverId)
             .single();
         
@@ -593,7 +593,7 @@ async function showSendNotificationModal() {
     try {
         const { data: schools, error } = await supabase
             .from('schools')
-            .select('id, name, type')
+            .select('id, name')
             .eq('is_active', true)
             .order('name', { ascending: true });
         
@@ -631,7 +631,7 @@ async function showSendNotificationModal() {
                                     <select class="form-select" id="targetSchools" multiple size="8">
                                         <option value="">جميع المدارس</option>
                                         ${(schools || []).map(school => 
-                                            `<option value="${school.id}">${school.name} ${school.type === 'rawda' ? '(روضة)' : '(مدرسة)'}</option>`
+                                            `<option value="${school.id}">${school.name}</option>`
                                         ).join('')}
                                     </select>
                                     <small class="text-muted">اضغط Ctrl لاختيار أكثر من مدرسة. إذا لم تختر أي مدرسة، سيتم إرسال التنبيه لجميع المدارس</small>
