@@ -306,6 +306,121 @@ async function loadConversations() {
     }
 }
 
+async function showNewConversationModalAdmin() {
+    try {
+        const { data: schools, error } = await supabase
+            .from('schools')
+            .select('id, name, type')
+            .eq('is_active', true)
+            .order('name', { ascending: true });
+        
+        if (error) throw error;
+
+        const modalHTML = `
+            <div class="modal fade" id="newConversationModalAdmin" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">بدء محادثة جديدة</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">اختر المدرسة</label>
+                                <select class="form-select" id="receiverSelectAdmin">
+                                    <option value="">اختر مدرسة...</option>
+                                    ${(schools || []).map(school => 
+                                        `<option value="${school.id}">${school.name} ${school.type === 'rawda' ? '(روضة)' : '(مدرسة)'}</option>`
+                                    ).join('')}
+                                </select>
+                                <small class="text-muted">يمكنك محادثة أي مدرسة</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                            <button type="button" class="btn btn-primary" onclick="startNewConversationAdmin()">بدء المحادثة</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        const existingModal = document.getElementById('newConversationModalAdmin');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        const modal = new bootstrap.Modal(document.getElementById('newConversationModalAdmin'));
+        modal.show();
+    } catch (error) {
+        console.error('خطأ في تحميل المدارس:', error);
+        showAlert('خطأ في تحميل المدارس', 'danger');
+    }
+}
+
+async function startNewConversationAdmin() {
+    const receiverId = document.getElementById('receiverSelectAdmin').value;
+    if (!receiverId) {
+        showAlert('يرجى اختيار مدرسة', 'warning');
+        return;
+    }
+    try {
+        const { data: school, error: schoolError } = await supabase
+            .from('schools')
+            .select('id, name, type')
+            .eq('id', receiverId)
+            .single();
+        
+        if (schoolError) throw schoolError;
+        if (!school) {
+            showAlert('المدرسة غير موجودة', 'danger');
+            return;
+        }
+
+        let conversation = await findOrCreateConversationAdmin('admin', receiverId);
+        if (!conversation) {
+            const { data, error } = await supabase
+                .from('conversations')
+                .insert({
+                    sender_id: 'admin',
+                    sender_name: currentUser.full_name || 'رئيس مجلس الإدارة',
+                    sender_type: 'admin',
+                    receiver_id: receiverId,
+                    receiver_name: school.name,
+                    receiver_type: 'school',
+                    last_message: '',
+                    unread_count: 0
+                })
+                .select()
+                .single();
+            if (error) throw error;
+            conversation = data;
+        }
+        const newConvModal = bootstrap.Modal.getInstance(document.getElementById('newConversationModalAdmin'));
+        if (newConvModal) newConvModal.hide();
+        await openConversation(conversation.id);
+    } catch (error) {
+        console.error('خطأ في بدء المحادثة:', error);
+        showAlert('خطأ في بدء المحادثة', 'danger');
+    }
+}
+
+async function findOrCreateConversationAdmin(senderId, receiverId) {
+    try {
+        const { data, error } = await supabase
+            .from('conversations')
+            .select('*')
+            .or(`and(sender_id.eq.${senderId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${senderId})`)
+            .single();
+        if (error && error.code !== 'PGRST116') { 
+            throw error;
+        }
+        return data || null;
+    } catch (error) {
+        console.error('خطأ في البحث عن المحادثة:', error);
+        return null;
+    }
+}
+
 function displayConversations(conversations) {
     const container = document.getElementById('conversationsList');
 
@@ -339,7 +454,7 @@ function displayConversations(conversations) {
 async function openConversation(conversationId) {
     currentConversationId = conversationId;
     await loadConversationMessages(conversationId);
-    loadConversations();
+    await loadConversations();
 }
 
 async function loadConversationMessages(conversationId) {
@@ -406,6 +521,19 @@ async function sendMessage() {
 
         if (error) throw error;
 
+        // تحديث المحادثة
+        const conversation = conversationsData.find(c => c.id === currentConversationId);
+        if (conversation) {
+            await supabase
+                .from('conversations')
+                .update({
+                    last_message: message,
+                    last_message_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', currentConversationId);
+        }
+
         messageInput.value = '';
         await loadConversationMessages(currentConversationId);
         await loadConversations();
@@ -458,6 +586,117 @@ async function loadNotifications() {
         }).join('');
     } catch (error) {
         console.error('خطأ في تحميل الإشعارات:', error);
+    }
+}
+
+async function showSendNotificationModal() {
+    try {
+        const { data: schools, error } = await supabase
+            .from('schools')
+            .select('id, name, type')
+            .eq('is_active', true)
+            .order('name', { ascending: true });
+        
+        if (error) throw error;
+
+        const modalHTML = `
+            <div class="modal fade" id="sendNotificationModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">إرسال تنبيه</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="sendNotificationForm">
+                                <div class="mb-3">
+                                    <label class="form-label">العنوان *</label>
+                                    <input type="text" class="form-control" id="notificationTitle" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">الرسالة *</label>
+                                    <textarea class="form-control" id="notificationMessage" rows="5" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">نوع التنبيه *</label>
+                                    <select class="form-select" id="notificationType" required>
+                                        <option value="info">معلومة</option>
+                                        <option value="success">نجاح</option>
+                                        <option value="warning">تحذير</option>
+                                        <option value="error">خطأ</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">المدارس المستهدفة</label>
+                                    <select class="form-select" id="targetSchools" multiple size="8">
+                                        <option value="">جميع المدارس</option>
+                                        ${(schools || []).map(school => 
+                                            `<option value="${school.id}">${school.name} ${school.type === 'rawda' ? '(روضة)' : '(مدرسة)'}</option>`
+                                        ).join('')}
+                                    </select>
+                                    <small class="text-muted">اضغط Ctrl لاختيار أكثر من مدرسة. إذا لم تختر أي مدرسة، سيتم إرسال التنبيه لجميع المدارس</small>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                            <button type="button" class="btn btn-primary" onclick="submitNotificationAdmin()">إرسال</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        const existingModal = document.getElementById('sendNotificationModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        const modal = new bootstrap.Modal(document.getElementById('sendNotificationModal'));
+        modal.show();
+    } catch (error) {
+        console.error('خطأ في تحميل المدارس:', error);
+        showAlert('خطأ في تحميل المدارس', 'danger');
+    }
+}
+
+async function submitNotificationAdmin() {
+    const title = document.getElementById('notificationTitle').value.trim();
+    const message = document.getElementById('notificationMessage').value.trim();
+    const type = document.getElementById('notificationType').value;
+    const targetSchoolsSelect = document.getElementById('targetSchools');
+    const selectedOptions = Array.from(targetSchoolsSelect.selectedOptions);
+    const targetSchools = selectedOptions
+        .map(option => option.value)
+        .filter(value => value !== '');
+
+    if (!title || !message) {
+        showAlert('يرجى ملء جميع الحقول المطلوبة', 'warning');
+        return;
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('admin_notifications')
+            .insert({
+                admin_id: 'admin',
+                title: title,
+                message: message,
+                notification_type: type,
+                target_schools: targetSchools.length > 0 ? targetSchools : null,
+                is_read_by: {}
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        showAlert('تم إرسال التنبيه بنجاح', 'success');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('sendNotificationModal'));
+        if (modal) modal.hide();
+        await loadNotifications();
+    } catch (error) {
+        console.error('خطأ في إرسال التنبيه:', error);
+        showAlert('حدث خطأ أثناء إرسال التنبيه', 'danger');
     }
 }
 

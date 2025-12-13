@@ -219,6 +219,44 @@
             font-size: 11px;
             font-weight: 700;
         }
+        .top-notification {
+            margin: 5px auto;
+            max-width: 90%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            animation: slideDown 0.3s ease-out;
+            border-right: 5px solid;
+        }
+        .top-notification.info {
+            border-right-color: var(--info-color);
+        }
+        .top-notification.success {
+            border-right-color: var(--success-color);
+        }
+        .top-notification.warning {
+            border-right-color: var(--warning-color);
+        }
+        .top-notification.error {
+            border-right-color: var(--danger-color);
+        }
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .main-content {
+            margin-top: 0;
+        }
+        @media (max-width: 768px) {
+            .top-notification {
+                max-width: 95%;
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -248,6 +286,9 @@
             </div>
         </div>
     </nav>
+
+    <!-- منطقة التنبيهات المميزة في أعلى الشاشة -->
+    <div id="topNotificationsContainer" style="position: fixed; top: 56px; left: 0; right: 0; z-index: 1000; padding: 10px;"></div>
 
     <div class="container-fluid">
         <div class="row">

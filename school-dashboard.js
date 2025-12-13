@@ -42,6 +42,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadNotifications();
         await loadMessages();
     }, 30000);
+
+    // تحديث التنبيهات كل 5 ثوانٍ
+    setInterval(async () => {
+        await loadNotifications();
+    }, 5000);
 });
 
 async function loadSchoolData(schoolId) {
@@ -303,10 +308,12 @@ async function loadNotifications() {
 
         if (error) throw error;
 
-        const unreadCount = data.filter(n => {
+        const unreadNotifications = data.filter(n => {
             const readBy = n.is_read_by || {};
             return !readBy[currentSchool.id];
-        }).length;
+        });
+
+        const unreadCount = unreadNotifications.length;
 
         const badge = document.getElementById('notificationBadge');
         if (unreadCount > 0) {
@@ -315,8 +322,119 @@ async function loadNotifications() {
         } else {
             badge.style.display = 'none';
         }
+
+        // عرض التنبيهات المميزة في أعلى الشاشة
+        displayTopNotifications(unreadNotifications.slice(0, 3)); // عرض آخر 3 تنبيهات غير مقروءة
     } catch (error) {
         console.error('خطأ في تحميل الإشعارات:', error);
+    }
+}
+
+function displayTopNotifications(notifications) {
+    const container = document.getElementById('topNotificationsContainer');
+    if (!container) return;
+
+    // إزالة التنبيهات القديمة التي تم إغلاقها
+    const existingNotifications = container.querySelectorAll('.top-notification');
+    existingNotifications.forEach(notif => {
+        const notifId = notif.getAttribute('data-notification-id');
+        if (!notifications.find(n => n.id === notifId)) {
+            notif.style.transition = 'opacity 0.3s';
+            notif.style.opacity = '0';
+            setTimeout(() => {
+                if (notif.parentNode) {
+                    notif.remove();
+                }
+            }, 300);
+        }
+    });
+
+    if (notifications.length === 0) return;
+
+    notifications.forEach(notif => {
+        // التحقق من وجود التنبيه بالفعل
+        const existingNotif = container.querySelector(`[data-notification-id="${notif.id}"]`);
+        if (existingNotif) return;
+
+        const notificationDiv = document.createElement('div');
+        notificationDiv.className = `alert alert-${getNotificationTypeColor(notif.notification_type)} alert-dismissible fade show top-notification ${notif.notification_type}`;
+        notificationDiv.setAttribute('data-notification-id', notif.id);
+        notificationDiv.style.cssText = 'margin-bottom: 10px; cursor: pointer;';
+        notificationDiv.innerHTML = `
+            <div class="d-flex align-items-start">
+                <div class="flex-grow-1">
+                    <strong><i class="bi bi-bell-fill"></i> ${Utils.sanitizeHTML(notif.title)}</strong>
+                    <div class="mt-1">${Utils.sanitizeHTML(notif.message)}</div>
+                    <small class="d-block mt-1"><i class="bi bi-clock"></i> ${Utils.formatDateArabic(notif.created_at)}</small>
+                </div>
+                <button type="button" class="btn-close" onclick="event.stopPropagation(); dismissTopNotification('${notif.id}', this)"></button>
+            </div>
+        `;
+        notificationDiv.onclick = () => {
+            if (typeof showNotifications === 'function') {
+                showNotifications();
+            }
+        };
+        container.appendChild(notificationDiv);
+
+        // إزالة التنبيه تلقائياً بعد 15 ثانية
+        setTimeout(() => {
+            if (notificationDiv.parentNode) {
+                notificationDiv.style.transition = 'opacity 0.3s';
+                notificationDiv.style.opacity = '0';
+                setTimeout(() => {
+                    if (notificationDiv.parentNode) {
+                        notificationDiv.remove();
+                    }
+                }, 300);
+            }
+        }, 15000);
+    });
+}
+
+function getNotificationTypeColor(type) {
+    const colors = {
+        'info': 'info',
+        'success': 'success',
+        'warning': 'warning',
+        'error': 'danger'
+    };
+    return colors[type] || 'info';
+}
+
+async function dismissTopNotification(notificationId, button) {
+    try {
+        const notificationDiv = button.closest('.top-notification');
+        if (notificationDiv) {
+            notificationDiv.style.transition = 'opacity 0.3s';
+            notificationDiv.style.opacity = '0';
+            setTimeout(() => {
+                notificationDiv.remove();
+            }, 300);
+        }
+
+        // تحديث حالة القراءة
+        const { data: notification, error: fetchError } = await supabase
+            .from('admin_notifications')
+            .select('*')
+            .eq('id', notificationId)
+            .single();
+        
+        if (fetchError) throw fetchError;
+        
+        const readBy = notification.is_read_by || {};
+        if (currentSchool && currentSchool.id) {
+            readBy[currentSchool.id] = new Date().toISOString();
+        }
+        
+        await supabase
+            .from('admin_notifications')
+            .update({ is_read_by: readBy })
+            .eq('id', notificationId);
+        
+        await loadNotifications();
+    } catch (error) {
+        console.error('خطأ في إغلاق التنبيه:', error);
     }
 }
 

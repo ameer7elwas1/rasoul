@@ -106,6 +106,7 @@ function showNewConversationModal() {
                                     `<option value="${school.id}">${school.name} ${school.type === 'rawda' ? '(روضة)' : '(مدرسة)'}</option>`
                                 ).join('')}
                             </select>
+                            <small class="text-muted">يمكنك محادثة أي مدرسة أخرى أو رئيس مجلس الإدارة</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -137,7 +138,7 @@ async function startNewConversation() {
             const school = window.allSchools.find(s => s.id === receiverId);
             if (school) {
                 receiverName = school.name;
-                receiverType = school.type === 'rawda' ? 'rawda' : 'school';
+                receiverType = school.type === 'rawda' ? 'school' : 'school';
             }
         }
         let conversation = await findOrCreateConversation(currentSchool.id, receiverId);
@@ -259,6 +260,17 @@ async function sendConversationMessage(conversationId) {
                 message: message
             });
         if (error) throw error;
+
+        // تحديث المحادثة
+        await supabase
+            .from('conversations')
+            .update({
+                last_message: message,
+                last_message_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', conversationId);
+
         messageInput.value = '';
         await loadConversationMessages(conversationId);
         await loadMessages();
