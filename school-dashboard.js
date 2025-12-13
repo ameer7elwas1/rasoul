@@ -1,4 +1,4 @@
-﻿const supabaseUrl = CONFIG?.SUPABASE?.URL || 'https://vpvvjascwgivdjyyhzwp.supabase.co';
+const supabaseUrl = CONFIG?.SUPABASE?.URL || 'https://vpvvjascwgivdjyyhzwp.supabase.co';
 const supabaseKey = CONFIG?.SUPABASE?.ANON_KEY || '';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
