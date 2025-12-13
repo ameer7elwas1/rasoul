@@ -28,7 +28,7 @@ async function showNotifications() {
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title">���������</h5>
+                            <h5 class="modal-title">الإشعارات</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
@@ -50,7 +50,7 @@ async function showNotifications() {
                                         </div>
                                     </div>
                                 `;
-                            }).join('') : '<p class="text-center text-muted">�� ���� �������</p>'}
+                            }).join('') : '<p class="text-center text-muted">لا توجد إشعارات</p>'}
                         </div>
                     </div>
                 </div>
@@ -90,15 +90,15 @@ async function markNotificationRead(notificationId) {
             .eq('id', notificationId);
         await loadNotifications(); 
     } catch (error) {
-        console.error('��� �� ����� ������� ������:', error);
+        console.error('خطأ في تحديث حالة الإشعار:', error);
     }
 }
 function getNotificationTypeName(type) {
     const types = {
-        'info': '�������',
-        'success': '����',
-        'warning': '�����',
-        'error': '���'
+        'info': 'معلومة',
+        'success': 'نجاح',
+        'warning': 'تحذير',
+        'error': 'خطأ'
     };
     return types[type] || type;
 }
@@ -128,7 +128,7 @@ async function sendNotificationToSchools(title, message, type = 'info', targetSc
         if (error) throw error;
         return { success: true, data };
     } catch (error) {
-        console.error('��� �� ����� �������:', error);
+        console.error('خطأ في إرسال الإشعار:', error);
         return { success: false, error: error.message };
     }
 }
@@ -138,43 +138,43 @@ function showSendNotificationModal() {
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">����� �����</h5>
+                        <h5 class="modal-title">إرسال إشعار</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <form id="sendNotificationForm">
                             <div class="mb-3">
-                                <label class="form-label">������� *</label>
+                                <label class="form-label">العنوان *</label>
                                 <input type="text" class="form-control" id="notificationTitle" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">������� *</label>
+                                <label class="form-label">الرسالة *</label>
                                 <textarea class="form-control" id="notificationMessage" rows="5" required></textarea>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">��� ������� *</label>
+                                <label class="form-label">نوع الإشعار *</label>
                                 <select class="form-select" id="notificationType" required>
-                                    <option value="info">�������</option>
-                                    <option value="success">����</option>
-                                    <option value="warning">�����</option>
-                                    <option value="error">���</option>
+                                    <option value="info">معلومة</option>
+                                    <option value="success">نجاح</option>
+                                    <option value="warning">تحذير</option>
+                                    <option value="error">خطأ</option>
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">������� ���������</label>
+                                <label class="form-label">المدارس المستهدفة</label>
                                 <select class="form-select" id="targetSchools" multiple>
-                                    <option value="">���� �������</option>
+                                    <option value="">جميع المدارس</option>
                                     ${schoolsData.map(school => 
                                         `<option value="${school.id}">${school.name}</option>`
                                     ).join('')}
                                 </select>
-                                <small class="text-muted">����� ������ ������ ������� ����� �������</small>
+                                <small class="text-muted">اضغط Ctrl لاختيار أكثر من مدرسة</small>
                             </div>
                         </form>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">�����</button>
-                        <button type="button" class="btn btn-primary" onclick="submitNotification()">�����</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="button" class="btn btn-primary" onclick="submitNotification()">إرسال</button>
                     </div>
                 </div>
             </div>
@@ -197,21 +197,21 @@ async function submitNotification() {
         .map(option => option.value)
         .filter(value => value !== '');
     if (!title || !message) {
-        alert('���� ����� ������� ��������');
+        alert('يرجى ملء جميع الحقول المطلوبة');
         return;
     }
     try {
         const result = await sendNotificationToSchools(title, message, type, targetSchools);
         if (result.success) {
-            showAlert('�� ����� ������� �����', 'success');
+            showAlert('تم إرسال الإشعار بنجاح', 'success');
             const modal = bootstrap.Modal.getInstance(document.getElementById('sendNotificationModal'));
             modal.hide();
             await loadNotifications();
         } else {
-            showAlert('��� �� ����� �������: ' + result.error, 'danger');
+            showAlert('خطأ في إرسال الإشعار: ' + result.error, 'danger');
         }
     } catch (error) {
-        console.error('��� �� ����� �������:', error);
-        showAlert('��� ��� ����� ����� �������', 'danger');
+        console.error('خطأ في إرسال الإشعار:', error);
+        showAlert('حدث خطأ أثناء إرسال الإشعار', 'danger');
     }
 }

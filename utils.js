@@ -1,10 +1,10 @@
 const Utils = {
     formatCurrency: function(amount) {
         if (amount === null || amount === undefined || isNaN(amount)) {
-            return '0 �.�';
+            return '0 د.ع';
         }
         const num = parseFloat(amount);
-        return num.toLocaleString('ar-IQ') + ' �.�';
+        return num.toLocaleString('ar-IQ') + ' د.ع';
     },
     sanitizeHTML: function(str) {
         if (!str) return '';
