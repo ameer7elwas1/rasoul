@@ -422,7 +422,7 @@ async function printPaymentReceipt(paymentId) {
     }
 }
 
-function viewPayment(paymentId) {
+window.viewPayment = function(paymentId) {
     printPaymentReceipt(paymentId);
 }
 

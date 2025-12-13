@@ -60,8 +60,7 @@ async function loadSchoolData(schoolId) {
     }
 }
 
-function showSection(sectionId) {
-
+window.showSection = function(sectionId) {
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
     });
@@ -153,7 +152,7 @@ async function loadStudents() {
     }
 }
 
-async function loadStudentInstallments() {
+window.loadStudentInstallments = async function() {
     const studentId = document.getElementById('studentSelect').value;
     if (!studentId) {
         document.getElementById('installmentsContent').innerHTML = 
@@ -347,7 +346,7 @@ async function loadMessages() {
     }
 }
 
-function viewStudent(studentId) {
+window.viewStudent = function(studentId) {
     const student = studentsData.find(s => s.id === studentId);
     if (!student) return;
 
@@ -355,7 +354,7 @@ function viewStudent(studentId) {
     displayStudentInstallments(student);
 }
 
-function addPayment(studentId) {
+window.addPayment = function(studentId) {
     const student = studentsData.find(s => s.id === studentId);
     if (!student) return;
 
@@ -370,7 +369,7 @@ function addPayment(studentId) {
     }
 }
 
-async function sendWhatsApp(studentId) {
+window.sendWhatsApp = async function(studentId) {
     if (typeof showWhatsAppModal === 'function') {
         showWhatsAppModal(studentId);
     } else {
@@ -381,7 +380,7 @@ async function sendWhatsApp(studentId) {
     }
 }
 
-function logout() {
+window.logout = function() {
     if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
         localStorage.removeItem('user');
         localStorage.removeItem('loginTime');
@@ -389,7 +388,7 @@ function logout() {
     }
 }
 
-function showAlert(message, type = 'info') {
+window.showAlert = function(message, type = 'info') {
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
     alertDiv.style.zIndex = '9999';
