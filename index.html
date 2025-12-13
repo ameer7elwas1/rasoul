@@ -146,22 +146,20 @@
     <script src="config.js"></script>
     <script src="utils.js?v=20250127"></script>
     <script>
-        
+
         const supabaseUrl = CONFIG?.SUPABASE?.URL || 'https://vpvvjascwgivdjyyhzwp.supabase.co';
         const supabaseKey = CONFIG?.SUPABASE?.ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwdnZqYXNjd2dpdmRqeXloendwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4MDYxMjYsImV4cCI6MjA2NTM4MjEyNn0.6AR2-MG4x9ugNTXe9jUqx-IwGEtj1m6MCYwQkTsSbUQ';
-        
+
         if (!supabaseKey) {
             console.error('خطأ: ANON_KEY غير موجود في config.js');
             alert('خطأ في الإعدادات: يرجى التحقق من ملف config.js');
         }
-        
+
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        
         let loginAttempts = 0;
         const maxAttempts = CONFIG.SECURITY.MAX_LOGIN_ATTEMPTS;
 
-        
         function showAlert(message, type = 'danger') {
             const alertContainer = document.getElementById('alertContainer');
             alertContainer.innerHTML = `
@@ -179,47 +177,42 @@
             }, 5000);
         }
 
-        
         async function hashPassword(password) {
-            
-            
+
             return password; 
         }
 
-        
         async function verifyPassword(password, hash) {
             if (!password || !hash) {
                 console.error('Password or hash is missing');
                 return false;
             }
-            
+
             try {
                 const response = await supabase.rpc('verify_password', {
                     password: password,
                     hash: hash
                 });
-                
+
                 if (response.error) {
                     console.warn('RPC verify_password failed, using fallback:', response.error);
-                    // Fallback: direct comparison (for development only)
-                    // This is used when passwords are stored in plain text or RPC function doesn't exist
+
                     return password === hash;
                 }
-                
+
                 return response.data === true;
             } catch (error) {
                 console.error('Error in verifyPassword:', error);
-                // Fallback: direct comparison
+
                 return password === hash;
             }
         }
 
-        
         async function login(username, password) {
             try {
                 const trimmedUsername = username.toLowerCase().trim();
                 console.log('Attempting login for username:', trimmedUsername);
-                
+
                 const { data: user, error: fetchError } = await supabase
                     .from('users')
                     .select('*')
@@ -252,7 +245,7 @@
                 console.log('User found, verifying password...');
                 const isValid = await verifyPassword(password, user.password_hash);
                 console.log('Password verification result:', isValid);
-                
+
                 if (!isValid) {
                     console.warn('Invalid password for user:', trimmedUsername);
                     loginAttempts++;
@@ -264,7 +257,6 @@
                     return false;
                 }
 
-                // Fetch school data separately if school_id exists
                 let schoolName = null;
                 if (user.school_id) {
                     try {
@@ -273,7 +265,7 @@
                             .select('id, name')
                             .eq('id', user.school_id)
                             .single();
-                        
+
                         if (!schoolError && school) {
                             schoolName = school.name;
                         }
@@ -282,7 +274,6 @@
                     }
                 }
 
-                
                 if (user.locked_until && new Date(user.locked_until) > new Date()) {
                     const lockTime = Math.ceil((new Date(user.locked_until) - new Date()) / 60000);
                     showAlert(`الحساب مقفل. يرجى المحاولة بعد ${lockTime} دقيقة`, 'warning');
@@ -290,7 +281,7 @@
                 }
 
                 console.log('Login successful, updating user data...');
-                
+
                 await supabase
                     .from('users')
                     .update({
@@ -301,7 +292,6 @@
                     })
                     .eq('id', user.id);
 
-                
                 const userData = {
                     id: user.id,
                     username: user.username,
@@ -318,7 +308,7 @@
                 loginAttempts = 0;
 
                 console.log('Redirecting user...', userData);
-                
+
                 if (user.is_admin || user.role === 'admin') {
                     window.location.href = 'admin-dashboard.html';
                 } else if (user.school_id) {
@@ -335,10 +325,9 @@
             }
         }
 
-        
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -349,27 +338,24 @@
                 return;
             }
 
-            
             submitBtn.disabled = true;
             loading.classList.add('show');
 
             await login(username, password);
 
-            
             submitBtn.disabled = false;
             loading.classList.remove('show');
         });
 
-        
         window.addEventListener('DOMContentLoaded', () => {
             const userData = localStorage.getItem('user');
             const loginTime = localStorage.getItem('loginTime');
-            
+
             if (userData && loginTime) {
                 const loginDate = new Date(loginTime);
                 const now = new Date();
                 const sessionTimeout = CONFIG?.SECURITY?.SESSION_TIMEOUT || 24 * 60 * 60 * 1000;
-                
+
                 if (now - loginDate < sessionTimeout) {
                     const user = JSON.parse(userData);
                     if (user.is_admin || user.role === 'admin') {
@@ -386,4 +372,3 @@
     </script>
 </body>
 </html>
-

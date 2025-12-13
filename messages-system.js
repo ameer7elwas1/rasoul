@@ -1,1 +1,151 @@
-async function showMessages() {    try {        let conversation = await findOrCreateConversation('admin', currentSchool.id);        if (!conversation) {            const { data, error } = await supabase                .from('conversations')                .insert({                    sender_id: currentSchool.id,                    sender_name: currentSchool.name,                    sender_type: 'school',                    receiver_id: 'admin',                    receiver_name: '���� ���� �������',                    receiver_type: 'admin',                    last_message: '',                    unread_count: 0                })                .select()                .single();            if (error) throw error;            conversation = data;        }        showConversationModal(conversation.id);    } catch (error) {        console.error('��� �� ��� ���������:', error);        showAlert('��� �� ����� ���������', 'danger');    }}async function findOrCreateConversation(senderId, receiverId) {    try {        const { data, error } = await supabase            .from('conversations')            .select('*')            .or(`and(sender_id.eq.${senderId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${senderId})`)            .single();        if (error && error.code !== 'PGRST116') {             throw error;        }        return data || null;    } catch (error) {        console.error('��� �� ����� �� ��������:', error);        return null;    }}function showConversationModal(conversationId) {    const modalHTML = `        <div class="modal fade" id="conversationModal" tabindex="-1">            <div class="modal-dialog modal-lg">                <div class="modal-content">                    <div class="modal-header">                        <h5 class="modal-title">�������� �� ���� ���� �������</h5>                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>                    </div>                    <div class="modal-body">                        <div class="chat-container" style="height: 400px;">                            <div class="chat-messages" id="conversationMessages" style="overflow-y: auto; max-height: 350px;">                                <!-- ���� ����� ���������� -->                            </div>                            <div class="message-input p-3 border-top">                                <div class="input-group">                                    <input type="text" class="form-control" id="conversationMessageInput"                                            placeholder="���� �����..." onkeypress="if(event.key==='Enter') sendConversationMessage('${conversationId}')">                                    <button class="btn btn-primary" onclick="sendConversationMessage('${conversationId}')">                                        <i class="bi bi-send-fill"></i>                                    </button>                                </div>                            </div>                        </div>                    </div>                </div>            </div>        </div>    `;    const existingModal = document.getElementById('conversationModal');    if (existingModal) {        existingModal.remove();    }    document.body.insertAdjacentHTML('beforeend', modalHTML);    const modal = new bootstrap.Modal(document.getElementById('conversationModal'));    modal.show();    loadConversationMessages(conversationId);}async function loadConversationMessages(conversationId) {    try {        const { data, error } = await supabase            .from('conversation_messages')            .select('*')            .eq('conversation_id', conversationId)            .order('created_at', { ascending: true });        if (error) throw error;        const messagesContainer = document.getElementById('conversationMessages');        if (!data || data.length === 0) {            messagesContainer.innerHTML = '<p class="text-center text-muted">�� ���� ����� �� ��� ��������</p>';            return;        }        messagesContainer.innerHTML = data.map(msg => {            const isSent = msg.sender_id === currentSchool.id;            return `                <div class="message ${isSent ? 'sent' : ''}" style="margin-bottom: 15px; display: flex; ${isSent ? 'justify-content: flex-end;' : ''}">                    <div class="message-content" style="max-width: 70%; padding: 12px 16px; border-radius: 15px; background: ${isSent ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white'}; color: ${isSent ? 'white' : '#333'}; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">                        <div class="fw-bold mb-1">${msg.sender_name}</div>                        <div>${Utils.sanitizeHTML(msg.message)}</div>                        <small style="opacity: 0.7;">${Utils.formatTime(msg.created_at)}</small>                    </div>                </div>            `;        }).join('');        messagesContainer.scrollTop = messagesContainer.scrollHeight;        await supabase.rpc('mark_conversation_messages_read', {            conv_id: conversationId,            reader_id: currentSchool.id        });    } catch (error) {        console.error('��� �� ����� �������:', error);    }}async function sendConversationMessage(conversationId) {    const messageInput = document.getElementById('conversationMessageInput');    const message = messageInput.value.trim();    if (!message) return;    try {        const { data, error } = await supabase            .from('conversation_messages')            .insert({                conversation_id: conversationId,                sender_id: currentSchool.id,                sender_name: currentSchool.name,                message: message            });        if (error) throw error;        messageInput.value = '';        await loadConversationMessages(conversationId);        await loadMessages();     } catch (error) {        console.error('��� �� ����� �������:', error);        showAlert('��� �� ����� �������', 'danger');    }}
+async function showMessages() {
+    try {
+        if (!currentSchool || !currentSchool.id) {
+            showAlert('لم يتم تحديد المدرسة', 'danger');
+            return;
+        }
+        let conversation = await findOrCreateConversation('admin', currentSchool.id);
+        if (!conversation) {
+            const { data, error } = await supabase
+                .from('conversations')
+                .insert({
+                    sender_id: currentSchool.id,
+                    sender_name: currentSchool.name,
+                    sender_type: 'school',
+                    receiver_id: 'admin',
+                    receiver_name: '���� ���� �������',
+                    receiver_type: 'admin',
+                    last_message: '',
+                    unread_count: 0
+                })
+                .select()
+                .single();
+            if (error) throw error;
+            conversation = data;
+        }
+        showConversationModal(conversation.id);
+    } catch (error) {
+        console.error('خطأ في تحميل الرسائل:', error);
+        if (typeof showAlert === 'function') {
+            showAlert('خطأ في تحميل الرسائل', 'danger');
+        } else {
+            alert('خطأ في تحميل الرسائل');
+        }
+    }
+}
+async function findOrCreateConversation(senderId, receiverId) {
+    try {
+        const { data, error } = await supabase
+            .from('conversations')
+            .select('*')
+            .or(`and(sender_id.eq.${senderId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${senderId})`)
+            .single();
+        if (error && error.code !== 'PGRST116') { 
+            throw error;
+        }
+        return data || null;
+    } catch (error) {
+        console.error('��� �� ����� �� ��������:', error);
+        return null;
+    }
+}
+function showConversationModal(conversationId) {
+    const modalHTML = `
+        <div class="modal fade" id="conversationModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">�������� �� ���� ���� �������</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="chat-container" style="height: 400px;">
+                            <div class="chat-messages" id="conversationMessages" style="overflow-y: auto; max-height: 350px;">
+                                
+                            </div>
+                            <div class="message-input p-3 border-top">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="conversationMessageInput" 
+                                           placeholder="���� �����..." onkeypress="if(event.key==='Enter') sendConversationMessage('${conversationId}')">
+                                    <button class="btn btn-primary" onclick="sendConversationMessage('${conversationId}')">
+                                        <i class="bi bi-send-fill"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    const existingModal = document.getElementById('conversationModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modal = new bootstrap.Modal(document.getElementById('conversationModal'));
+    modal.show();
+    loadConversationMessages(conversationId);
+}
+async function loadConversationMessages(conversationId) {
+    try {
+        const { data, error } = await supabase
+            .from('conversation_messages')
+            .select('*')
+            .eq('conversation_id', conversationId)
+            .order('created_at', { ascending: true });
+        if (error) throw error;
+        const messagesContainer = document.getElementById('conversationMessages');
+        if (!data || data.length === 0) {
+            messagesContainer.innerHTML = '<p class="text-center text-muted">�� ���� ����� �� ��� ��������</p>';
+            return;
+        }
+        messagesContainer.innerHTML = data.map(msg => {
+            const isSent = currentSchool && msg.sender_id === currentSchool.id;
+            return `
+                <div class="message ${isSent ? 'sent' : ''}" style="margin-bottom: 15px; display: flex; ${isSent ? 'justify-content: flex-end;' : ''}">
+                    <div class="message-content" style="max-width: 70%; padding: 12px 16px; border-radius: 15px; background: ${isSent ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white'}; color: ${isSent ? 'white' : '#333'}; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <div class="fw-bold mb-1">${msg.sender_name}</div>
+                        <div>${Utils.sanitizeHTML(msg.message)}</div>
+                        <small style="opacity: 0.7;">${Utils.formatTime(msg.created_at)}</small>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        if (currentSchool && currentSchool.id) {
+            await supabase.rpc('mark_conversation_messages_read', {
+                conv_id: conversationId,
+                reader_id: currentSchool.id
+            });
+        }
+    } catch (error) {
+        console.error('��� �� ����� �������:', error);
+    }
+}
+async function sendConversationMessage(conversationId) {
+    const messageInput = document.getElementById('conversationMessageInput');
+    const message = messageInput.value.trim();
+    if (!message) return;
+    try {
+        const { data, error } = await supabase
+            .from('conversation_messages')
+            .insert({
+                conversation_id: conversationId,
+                sender_id: currentSchool?.id || '',
+                sender_name: currentSchool?.name || '',
+                message: message
+            });
+        if (error) throw error;
+        messageInput.value = '';
+        await loadConversationMessages(conversationId);
+        await loadMessages(); 
+    } catch (error) {
+        console.error('خطأ في إرسال الرسالة:', error);
+        if (typeof showAlert === 'function') {
+            showAlert('خطأ في إرسال الرسالة', 'danger');
+        } else {
+            alert('خطأ في إرسال الرسالة');
+        }
+    }
+}

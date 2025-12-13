@@ -1,11 +1,14 @@
 async function printPaymentReceipt(paymentId) {
     try {
+
         if (!paymentId) {
             throw new Error('رقم الدفعة غير موجود');
         }
+
         if (typeof supabase === 'undefined') {
             throw new Error('Supabase غير متاح. يرجى التأكد من تحميل config.js');
         }
+
         const { data: payment, error: paymentError } = await supabase
             .from('payments')
             .select(`
@@ -26,17 +29,22 @@ async function printPaymentReceipt(paymentId) {
             `)
             .eq('id', paymentId)
             .single();
+
         if (paymentError) {
             console.error('Supabase error:', paymentError);
             throw new Error(`خطأ في جلب بيانات الدفعة: ${paymentError.message || 'خطأ غير معروف'}`);
         }
+
         if (!payment) {
             throw new Error('لم يتم العثور على بيانات الدفعة');
         }
+
         if (!payment.students) {
             throw new Error('لم يتم العثور على بيانات الطالب المرتبطة بهذه الدفعة');
         }
+
         const student = payment.students;
+
         let school = { name: 'المدرسة' };
         if (student.school_id) {
             try {
@@ -45,6 +53,7 @@ async function printPaymentReceipt(paymentId) {
                     .select('id, name')
                     .eq('id', student.school_id)
                     .single();
+
                 if (!schoolError && schoolData) {
                     school = schoolData;
                 } else if (schoolError) {
@@ -54,18 +63,24 @@ async function printPaymentReceipt(paymentId) {
                 console.warn('خطأ في جلب بيانات المدرسة:', err);
             }
         }
+
         const paymentDate = new Date(payment.payment_date);
         const formattedDate = `${paymentDate.getDate()} / ${paymentDate.getMonth() + 1} / ${paymentDate.getFullYear()}`;
+
         const receiptNumber = payment.receipt_number || payment.id.substring(0, 8).toUpperCase();
+
         const paymentMethodNames = {
             'cash': 'نقد',
             'bank_transfer': 'تحويل بنكي',
             'check': 'شيك',
             'other': 'أخرى'
         };
+
         const paymentMethod = paymentMethodNames[payment.payment_method] || payment.payment_method;
+
         const installmentNames = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
         const installmentName = installmentNames[payment.installment_number - 1] || `الدفعة ${payment.installment_number}`;
+
         const receiptHTML = `
             <!DOCTYPE html>
             <html lang="ar" dir="rtl">
@@ -87,6 +102,7 @@ async function printPaymentReceipt(paymentId) {
                         padding: 0; 
                         box-shadow: 0 10px 40px rgba(0,0,0,0.15); 
                     }
+
                     .header-gradient { 
                         background: linear-gradient(180deg, #0f766e 0%, #f0fdf4 100%); 
                         padding: 30px 15px; 
@@ -124,6 +140,7 @@ async function printPaymentReceipt(paymentId) {
                         position: relative;
                         z-index: 1;
                     }
+
                     .receipt-header { 
                         display: flex; 
                         justify-content: space-between; 
@@ -150,6 +167,7 @@ async function printPaymentReceipt(paymentId) {
                         font-weight: bold; 
                         color: #374151; 
                     }
+
                     .content { 
                         padding: 15px 20px; 
                     }
@@ -179,6 +197,7 @@ async function printPaymentReceipt(paymentId) {
                         border-radius: 6px; 
                         border: 2px solid #e5e7eb; 
                     }
+
                     .amount-highlight {
                         background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
                         border: 2px solid #10b981;
@@ -198,6 +217,7 @@ async function printPaymentReceipt(paymentId) {
                         font-weight: bold;
                         color: #047857;
                     }
+
                     .notes-section { 
                         background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); 
                         padding: 12px; 
@@ -227,6 +247,7 @@ async function printPaymentReceipt(paymentId) {
                         font-weight: bold; 
                         font-size: 15px; 
                     }
+
                     .signature-section { 
                         display: flex; 
                         justify-content: space-around; 
@@ -253,11 +274,13 @@ async function printPaymentReceipt(paymentId) {
                         position: relative; 
                         border-radius: 4px; 
                     }
+
                     .separator { 
                         height: 2px; 
                         background: linear-gradient(90deg, transparent, #0f766e, transparent); 
                         margin: 12px 0; 
                     }
+
                     @media print {
                         body { 
                             background: white; 
@@ -277,48 +300,60 @@ async function printPaymentReceipt(paymentId) {
                         <div class="logo-container"></div>
                         <div class="institution-name">مجموعة رسول الرحمة التعليمية</div>
                     </div>
+
                     <div class="receipt-header">
                         <div class="receipt-number">${receiptNumber}</div>
                         <div class="receipt-title">وصل قبض</div>
                         <div class="receipt-date">التاريخ: ${formattedDate}</div>
                     </div>
+
                     <div class="content">
                         <div class="info-row">
                             <label>استلمت من السيد ولي أمر الطالب:</label>
                             <span class="info-value">${Utils.sanitizeHTML(student.guardian_name)}</span>
                         </div>
+
                         <div class="info-row">
                             <label>اسم الطالب:</label>
                             <span class="info-value">${Utils.sanitizeHTML(student.name)}</span>
                         </div>
+
                         <div class="info-row">
                             <label>في الصف:</label>
                             <span class="info-value">${Utils.sanitizeHTML(student.grade)}</span>
                         </div>
+
                         <div class="info-row">
                             <label>المدرسة:</label>
                             <span class="info-value">${Utils.sanitizeHTML(school.name)}</span>
                         </div>
+
                         <div class="separator"></div>
+
                         <div class="amount-highlight">
                             <label>مبلغاً قدره:</label>
                             <div class="amount-value">${Utils.formatCurrency(payment.amount)}</div>
                         </div>
+
                         <div class="info-row">
                             <label>وهو القسط:</label>
                             <span class="info-value">${installmentName}</span>
                         </div>
+
                         <div class="info-row">
                             <label>طريقة الدفع:</label>
                             <span class="info-value">${paymentMethod}</span>
                         </div>
+
                         ${payment.notes ? `
                         <div class="info-row">
                             <label>الملاحظات:</label>
                             <span class="info-value">${Utils.sanitizeHTML(payment.notes)}</span>
                         </div>
                         ` : ''}
+
                         <div class="separator"></div>
+
                         <div class="notes-section">
                             <ul>
                                 <li>يسقط حق المطالبة بالمبلغ بعد توقيع الوصل.</li>
@@ -326,6 +361,7 @@ async function printPaymentReceipt(paymentId) {
                             </ul>
                         </div>
                     </div>
+
                     <div class="signature-section">
                         <div class="signature-box">
                             <label>اسم المستلم:</label>
@@ -340,12 +376,16 @@ async function printPaymentReceipt(paymentId) {
             </body>
             </html>
         `;
+
         const printWindow = window.open('', '_blank');
+
         if (!printWindow) {
             throw new Error('فشل فتح نافذة الطباعة. يرجى السماح بالنوافذ المنبثقة في المتصفح');
         }
+
         printWindow.document.write(receiptHTML);
         printWindow.document.close();
+
         printWindow.onload = () => {
             setTimeout(() => {
                 try {
@@ -357,6 +397,7 @@ async function printPaymentReceipt(paymentId) {
                 }
             }, 500);
         };
+
         setTimeout(() => {
             try {
                 if (printWindow.document.readyState === 'complete') {
@@ -366,25 +407,31 @@ async function printPaymentReceipt(paymentId) {
                 console.warn('Print fallback failed:', e);
             }
         }, 1000);
+
         return { success: true };
     } catch (error) {
         console.error('Error printing receipt:', error);
+
         if (typeof showAlert === 'function') {
             showAlert(`خطأ في طباعة الوصل: ${error.message}`, 'danger');
         } else {
             alert(`خطأ في طباعة الوصل: ${error.message}`);
         }
+
         return { success: false, error: error.message };
     }
 }
+
 function viewPayment(paymentId) {
     printPaymentReceipt(paymentId);
 }
+
 async function printPaymentReceiptAsync(paymentId) {
     if (!paymentId) {
         alert('رقم الدفعة غير موجود');
         return;
     }
+
     const result = await printPaymentReceipt(paymentId);
     if (!result.success && result.error) {
         if (typeof showAlert === 'function') {
@@ -394,6 +441,7 @@ async function printPaymentReceiptAsync(paymentId) {
         }
     }
 }
+
 async function printPaymentReceiptAdvanced(paymentId, options = {}) {
     const {
         showPrintDialog = true,
@@ -402,14 +450,21 @@ async function printPaymentReceiptAdvanced(paymentId, options = {}) {
         paperSize = 'A4',
         orientation = 'portrait'
     } = options;
+
     const result = await printPaymentReceipt(paymentId);
+
     if (result.success && showPrintDialog) {
+
     }
+
     return result;
 }
+
 async function exportReceiptToPDF(paymentId) {
     try {
+
         if (typeof window.jsPDF === 'undefined' && typeof window.jspdf === 'undefined') {
+
             const script = document.createElement('script');
             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
             script.onload = () => {
@@ -425,7 +480,9 @@ async function exportReceiptToPDF(paymentId) {
             document.head.appendChild(script);
             return;
         }
+
         const jsPDF = window.jsPDF || window.jspdf;
+
         const { data: payment, error: paymentError } = await supabase
             .from('payments')
             .select(`
@@ -446,13 +503,17 @@ async function exportReceiptToPDF(paymentId) {
             `)
             .eq('id', paymentId)
             .single();
+
         if (paymentError) {
             throw new Error(`خطأ في جلب بيانات الدفعة: ${paymentError.message || 'خطأ غير معروف'}`);
         }
+
         if (!payment || !payment.students) {
             throw new Error('Payment or student data not found');
         }
+
         const student = payment.students;
+
         let school = { name: 'المدرسة' };
         if (student.school_id) {
             try {
@@ -461,6 +522,7 @@ async function exportReceiptToPDF(paymentId) {
                     .select('id, name')
                     .eq('id', student.school_id)
                     .single();
+
                 if (!schoolError && schoolData) {
                     school = schoolData;
                 } else if (schoolError) {
@@ -470,92 +532,119 @@ async function exportReceiptToPDF(paymentId) {
                 console.warn('خطأ في جلب بيانات المدرسة:', err);
             }
         }
+
         const paymentDate = new Date(payment.payment_date);
         const formattedDate = Utils.formatDateArabic(payment.payment_date);
+
         const receiptNumber = payment.receipt_number || payment.id.substring(0, 8).toUpperCase();
+
         const paymentMethodNames = {
             'cash': 'نقد',
             'bank_transfer': 'تحويل بنكي',
             'check': 'شيك',
             'other': 'أخرى'
         };
+
         const paymentMethod = paymentMethodNames[payment.payment_method] || payment.payment_method;
+
         const installmentNames = ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'];
         const installmentName = installmentNames[payment.installment_number - 1] || `الدفعة ${payment.installment_number}`;
+
         const jsPDFLib = jsPDF.jsPDF || jsPDF;
         const doc = new jsPDFLib({
             orientation: 'portrait',
             unit: 'mm',
             format: 'a4'
         });
+
         doc.setFont('helvetica');
+
         doc.setFontSize(20);
         doc.setTextColor(15, 118, 110);
         doc.text('مجموعة رسول الرحمة التعليمية', 105, 20, { align: 'center' });
+
         doc.setFontSize(16);
         doc.setTextColor(0, 0, 0);
         doc.text('وصل قبض', 105, 30, { align: 'center' });
+
         doc.setFontSize(10);
         let yPos = 45;
+
         doc.text(`رقم الوصل: ${receiptNumber}`, 20, yPos);
         doc.text(`التاريخ: ${formattedDate}`, 150, yPos);
+
         yPos += 10;
         doc.line(20, yPos - 5, 190, yPos - 5);
+
         yPos += 10;
         doc.setFontSize(12);
         doc.text('استلمت من السيد ولي أمر الطالب:', 20, yPos);
         doc.setFontSize(11);
         doc.text(student.guardian_name, 20, yPos + 7);
+
         yPos += 15;
         doc.setFontSize(12);
         doc.text('اسم الطالب:', 20, yPos);
         doc.setFontSize(11);
         doc.text(student.name, 20, yPos + 7);
+
         yPos += 15;
         doc.setFontSize(12);
         doc.text('في الصف:', 20, yPos);
         doc.setFontSize(11);
         doc.text(student.grade, 20, yPos + 7);
+
         yPos += 15;
         doc.setFontSize(12);
         doc.text('المدرسة:', 20, yPos);
         doc.setFontSize(11);
         doc.text(school.name, 20, yPos + 7);
+
         yPos += 20;
         doc.line(20, yPos - 5, 190, yPos - 5);
+
         yPos += 10;
         doc.setFontSize(14);
         doc.text('مبلغاً قدره:', 20, yPos);
         doc.setFontSize(18);
         doc.setTextColor(15, 118, 110);
         doc.text(Utils.formatCurrency(payment.amount), 105, yPos, { align: 'center' });
+
         yPos += 15;
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
         doc.text(`وهو القسط: ${installmentName}`, 20, yPos);
+
         yPos += 10;
         doc.text(`طريقة الدفع: ${paymentMethod}`, 20, yPos);
+
         if (payment.notes) {
             yPos += 10;
             doc.text(`الملاحظات: ${payment.notes}`, 20, yPos);
         }
+
         yPos += 20;
         doc.line(20, yPos - 5, 190, yPos - 5);
+
         yPos += 15;
         doc.setFontSize(10);
         doc.text('اسم المستلم:', 50, yPos);
         doc.text('التوقيع:', 140, yPos);
+
         yPos += 10;
         doc.line(50, yPos, 100, yPos);
         doc.line(140, yPos, 190, yPos);
+
         yPos += 20;
         doc.setFontSize(9);
         doc.setTextColor(100, 100, 100);
         doc.text('• يسقط حق المطالبة بالمبلغ بعد توقيع الوصل.', 20, yPos);
         yPos += 7;
         doc.text('• يرجى الاحتفاظ بهذا الوصل حتى نهاية العام الدراسي.', 20, yPos);
+
         const fileName = `receipt_${receiptNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
         doc.save(fileName);
+
         return { success: true, fileName };
     } catch (error) {
         console.error('Error exporting receipt to PDF:', error);

@@ -261,7 +261,7 @@
     </style>
 </head>
 <body>
-    <!-- Navbar -->
+
     <nav class="navbar navbar-dark">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
@@ -278,7 +278,7 @@
 
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
+
             <div class="col-md-2 p-0">
                 <div class="sidebar">
                     <a href="#" class="sidebar-item active" onclick="showSection('dashboard')">
@@ -308,26 +308,23 @@
                 </div>
             </div>
 
-            <!-- Main Content -->
             <div class="col-md-10">
                 <div class="main-content">
-                    <!-- Dashboard Section -->
+
                     <div id="dashboard" class="content-section active">
                         <h2 class="mb-4">لوحة التحكم</h2>
                         <div class="row" id="schoolsStats">
-                            <!-- سيتم ملؤها ديناميكياً -->
+
                         </div>
                     </div>
 
-                    <!-- Schools Section -->
                     <div id="schools" class="content-section">
                         <h2 class="mb-4">المدارس والروضات</h2>
                         <div id="schoolsList">
-                            <!-- سيتم ملؤها ديناميكياً -->
+
                         </div>
                     </div>
 
-                    <!-- Students Section -->
                     <div id="students" class="content-section">
                         <h2 class="mb-4">جميع الطلاب</h2>
                         <div class="table-responsive">
@@ -351,13 +348,12 @@
                         </div>
                     </div>
 
-                    <!-- Messages Section -->
                     <div id="messages" class="content-section">
                         <div class="row">
                             <div class="col-md-4">
                                 <h4>المحادثات</h4>
                                 <div id="conversationsList" style="max-height: 600px; overflow-y: auto;">
-                                    <!-- سيتم ملؤها ديناميكياً -->
+
                                 </div>
                             </div>
                             <div class="col-md-8">
@@ -378,7 +374,6 @@
                         </div>
                     </div>
 
-                    <!-- Notifications Section -->
                     <div id="notifications" class="content-section">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h2>الإشعارات</h2>
@@ -387,19 +382,17 @@
                             </button>
                         </div>
                         <div id="notificationsList">
-                            <!-- سيتم ملؤها ديناميكياً -->
+
                         </div>
                     </div>
 
-                    <!-- Reports Section -->
                     <div id="reports" class="content-section">
                         <h2 class="mb-4">التقارير</h2>
                         <div id="reportsContent">
-                            <!-- سيتم ملؤها ديناميكياً -->
+
                         </div>
                     </div>
 
-                    <!-- Users Section -->
                     <div id="users" class="content-section">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h2>إدارة المستخدمين</h2>
@@ -430,11 +423,10 @@
                         </div>
                     </div>
 
-                    <!-- Settings Section -->
                     <div id="settings" class="content-section">
                         <h2 class="mb-4">الإعدادات</h2>
                         <div id="settingsContent">
-                            <!-- سيتم ملؤها ديناميكياً -->
+
                         </div>
                     </div>
                 </div>
@@ -442,7 +434,6 @@
         </div>
     </div>
 
-    <!-- Modals -->
     <div id="modalsContainer"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -459,4 +450,3 @@
     <script src="admin-dashboard.js"></script>
 </body>
 </html>
-

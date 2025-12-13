@@ -1,1 +1,217 @@
-async function showNotifications() {    try {        const { data, error } = await supabase            .from('admin_notifications')            .select('*')            .or(`target_schools.cs.{${currentSchool.id}},target_schools.is.null`)            .order('created_at', { ascending: false })            .limit(50);        if (error) throw error;        const modalHTML = `            <div class="modal fade" id="notificationsModal" tabindex="-1">                <div class="modal-dialog modal-lg">                    <div class="modal-content">                        <div class="modal-header">                            <h5 class="modal-title">���������</h5>                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>                        </div>                        <div class="modal-body" style="max-height: 500px; overflow-y: auto;">                            ${data && data.length > 0 ? data.map(notif => {                                const isRead = notif.is_read_by && notif.is_read_by[currentSchool.id];                                return `                                    <div class="card mb-3 ${isRead ? '' : 'border-primary'}" style="cursor: pointer;" onclick="markNotificationRead('${notif.id}')">                                        <div class="card-body">                                            <div class="d-flex justify-content-between align-items-start">                                                <div>                                                    <h6 class="mb-1">${notif.title}</h6>                                                    <p class="mb-2">${notif.message}</p>                                                    <small class="text-muted">${Utils.formatDateArabic(notif.created_at)}</small>                                                </div>                                                <span class="badge bg-${getNotificationTypeColor(notif.notification_type)}">                                                    ${getNotificationTypeName(notif.notification_type)}                                                </span>                                            </div>                                        </div>                                    </div>                                `;                            }).join('') : '<p class="text-center text-muted">�� ���� �������</p>'}                        </div>                    </div>                </div>            </div>        `;        const existingModal = document.getElementById('notificationsModal');        if (existingModal) {            existingModal.remove();        }        document.body.insertAdjacentHTML('beforeend', modalHTML);        const modal = new bootstrap.Modal(document.getElementById('notificationsModal'));        modal.show();    } catch (error) {        console.error('��� �� ����� ���������:', error);        showAlert('��� �� ����� ���������', 'danger');    }}async function markNotificationRead(notificationId) {    try {        const { data: notification, error: fetchError } = await supabase            .from('admin_notifications')            .select('*')            .eq('id', notificationId)            .single();        if (fetchError) throw fetchError;        const readBy = notification.is_read_by || {};        readBy[currentSchool.id] = new Date().toISOString();        await supabase            .from('admin_notifications')            .update({ is_read_by: readBy })            .eq('id', notificationId);        await loadNotifications();     } catch (error) {        console.error('��� �� ����� ������� ������:', error);    }}function getNotificationTypeName(type) {    const types = {        'info': '�������',        'success': '����',        'warning': '�����',        'error': '���'    };    return types[type] || type;}function getNotificationTypeColor(type) {    const colors = {        'info': 'info',        'success': 'success',        'warning': 'warning',        'error': 'danger'    };    return colors[type] || 'info';}async function sendNotificationToSchools(title, message, type = 'info', targetSchools = []) {    try {        const { data, error } = await supabase            .from('admin_notifications')            .insert({                admin_id: 'admin',                title: title,                message: message,                notification_type: type,                target_schools: targetSchools.length > 0 ? targetSchools : null,                is_read_by: {}            })            .select()            .single();        if (error) throw error;        return { success: true, data };    } catch (error) {        console.error('��� �� ����� �������:', error);        return { success: false, error: error.message };    }}function showSendNotificationModal() {    const modalHTML = `        <div class="modal fade" id="sendNotificationModal" tabindex="-1">            <div class="modal-dialog">                <div class="modal-content">                    <div class="modal-header">                        <h5 class="modal-title">����� �����</h5>                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>                    </div>                    <div class="modal-body">                        <form id="sendNotificationForm">                            <div class="mb-3">                                <label class="form-label">������� *</label>                                <input type="text" class="form-control" id="notificationTitle" required>                            </div>                            <div class="mb-3">                                <label class="form-label">������� *</label>                                <textarea class="form-control" id="notificationMessage" rows="5" required></textarea>                            </div>                            <div class="mb-3">                                <label class="form-label">��� ������� *</label>                                <select class="form-select" id="notificationType" required>                                    <option value="info">�������</option>                                    <option value="success">����</option>                                    <option value="warning">�����</option>                                    <option value="error">���</option>                                </select>                            </div>                            <div class="mb-3">                                <label class="form-label">������� ���������</label>                                <select class="form-select" id="targetSchools" multiple>                                    <option value="">���� �������</option>                                    ${schoolsData.map(school =>                                         `<option value="${school.id}">${school.name}</option>`                                    ).join('')}                                </select>                                <small class="text-muted">����� ������ ������ ������� ����� �������</small>                            </div>                        </form>                    </div>                    <div class="modal-footer">                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">�����</button>                        <button type="button" class="btn btn-primary" onclick="submitNotification()">�����</button>                    </div>                </div>            </div>        </div>    `;    const existingModal = document.getElementById('sendNotificationModal');    if (existingModal) {        existingModal.remove();    }    document.body.insertAdjacentHTML('beforeend', modalHTML);    const modal = new bootstrap.Modal(document.getElementById('sendNotificationModal'));    modal.show();}async function submitNotification() {    const title = document.getElementById('notificationTitle').value.trim();    const message = document.getElementById('notificationMessage').value.trim();    const type = document.getElementById('notificationType').value;    const targetSchoolsSelect = document.getElementById('targetSchools');    const targetSchools = Array.from(targetSchoolsSelect.selectedOptions)        .map(option => option.value)        .filter(value => value !== '');    if (!title || !message) {        alert('���� ����� ������� ��������');        return;    }    try {        const result = await sendNotificationToSchools(title, message, type, targetSchools);        if (result.success) {            showAlert('�� ����� ������� �����', 'success');            const modal = bootstrap.Modal.getInstance(document.getElementById('sendNotificationModal'));            modal.hide();            await loadNotifications();        } else {            showAlert('��� �� ����� �������: ' + result.error, 'danger');        }    } catch (error) {        console.error('��� �� ����� �������:', error);        showAlert('��� ��� ����� ����� �������', 'danger');    }}
+async function showNotifications() {
+    try {
+        if (!currentSchool || !currentSchool.id) {
+            if (typeof showAlert === 'function') {
+                showAlert('لم يتم تحديد المدرسة', 'danger');
+            } else {
+                alert('لم يتم تحديد المدرسة');
+            }
+            return;
+        }
+        if (!supabase || typeof supabase.from !== 'function') {
+            if (typeof showAlert === 'function') {
+                showAlert('خطأ في الاتصال بقاعدة البيانات', 'danger');
+            } else {
+                alert('خطأ في الاتصال بقاعدة البيانات');
+            }
+            return;
+        }
+        const { data, error } = await supabase
+            .from('admin_notifications')
+            .select('*')
+            .or(`target_schools.cs.{${currentSchool.id}},target_schools.is.null`)
+            .order('created_at', { ascending: false })
+            .limit(50);
+        if (error) throw error;
+        const modalHTML = `
+            <div class="modal fade" id="notificationsModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">���������</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
+                            ${data && data.length > 0 ? data.map(notif => {
+                                const isRead = notif.is_read_by && notif.is_read_by[currentSchool.id];
+                                return `
+                                    <div class="card mb-3 ${isRead ? '' : 'border-primary'}" style="cursor: pointer;" onclick="markNotificationRead('${notif.id}')">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="mb-1">${notif.title}</h6>
+                                                    <p class="mb-2">${notif.message}</p>
+                                                    <small class="text-muted">${Utils.formatDateArabic(notif.created_at)}</small>
+                                                </div>
+                                                <span class="badge bg-${getNotificationTypeColor(notif.notification_type)}">
+                                                    ${getNotificationTypeName(notif.notification_type)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('') : '<p class="text-center text-muted">�� ���� �������</p>'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        const existingModal = document.getElementById('notificationsModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        const modal = new bootstrap.Modal(document.getElementById('notificationsModal'));
+        modal.show();
+    } catch (error) {
+        console.error('خطأ في تحميل الإشعارات:', error);
+        if (typeof showAlert === 'function') {
+            showAlert('خطأ في تحميل الإشعارات', 'danger');
+        } else {
+            alert('خطأ في تحميل الإشعارات');
+        }
+    }
+}
+async function markNotificationRead(notificationId) {
+    try {
+        const { data: notification, error: fetchError } = await supabase
+            .from('admin_notifications')
+            .select('*')
+            .eq('id', notificationId)
+            .single();
+        if (fetchError) throw fetchError;
+        const readBy = notification.is_read_by || {};
+        if (currentSchool && currentSchool.id) {
+            readBy[currentSchool.id] = new Date().toISOString();
+        }
+        await supabase
+            .from('admin_notifications')
+            .update({ is_read_by: readBy })
+            .eq('id', notificationId);
+        await loadNotifications(); 
+    } catch (error) {
+        console.error('��� �� ����� ������� ������:', error);
+    }
+}
+function getNotificationTypeName(type) {
+    const types = {
+        'info': '�������',
+        'success': '����',
+        'warning': '�����',
+        'error': '���'
+    };
+    return types[type] || type;
+}
+function getNotificationTypeColor(type) {
+    const colors = {
+        'info': 'info',
+        'success': 'success',
+        'warning': 'warning',
+        'error': 'danger'
+    };
+    return colors[type] || 'info';
+}
+async function sendNotificationToSchools(title, message, type = 'info', targetSchools = []) {
+    try {
+        const { data, error } = await supabase
+            .from('admin_notifications')
+            .insert({
+                admin_id: 'admin',
+                title: title,
+                message: message,
+                notification_type: type,
+                target_schools: targetSchools.length > 0 ? targetSchools : null,
+                is_read_by: {}
+            })
+            .select()
+            .single();
+        if (error) throw error;
+        return { success: true, data };
+    } catch (error) {
+        console.error('��� �� ����� �������:', error);
+        return { success: false, error: error.message };
+    }
+}
+function showSendNotificationModal() {
+    const modalHTML = `
+        <div class="modal fade" id="sendNotificationModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">����� �����</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="sendNotificationForm">
+                            <div class="mb-3">
+                                <label class="form-label">������� *</label>
+                                <input type="text" class="form-control" id="notificationTitle" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">������� *</label>
+                                <textarea class="form-control" id="notificationMessage" rows="5" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">��� ������� *</label>
+                                <select class="form-select" id="notificationType" required>
+                                    <option value="info">�������</option>
+                                    <option value="success">����</option>
+                                    <option value="warning">�����</option>
+                                    <option value="error">���</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">������� ���������</label>
+                                <select class="form-select" id="targetSchools" multiple>
+                                    <option value="">���� �������</option>
+                                    ${schoolsData.map(school => 
+                                        `<option value="${school.id}">${school.name}</option>`
+                                    ).join('')}
+                                </select>
+                                <small class="text-muted">����� ������ ������ ������� ����� �������</small>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">�����</button>
+                        <button type="button" class="btn btn-primary" onclick="submitNotification()">�����</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    const existingModal = document.getElementById('sendNotificationModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modal = new bootstrap.Modal(document.getElementById('sendNotificationModal'));
+    modal.show();
+}
+async function submitNotification() {
+    const title = document.getElementById('notificationTitle').value.trim();
+    const message = document.getElementById('notificationMessage').value.trim();
+    const type = document.getElementById('notificationType').value;
+    const targetSchoolsSelect = document.getElementById('targetSchools');
+    const targetSchools = Array.from(targetSchoolsSelect.selectedOptions)
+        .map(option => option.value)
+        .filter(value => value !== '');
+    if (!title || !message) {
+        alert('���� ����� ������� ��������');
+        return;
+    }
+    try {
+        const result = await sendNotificationToSchools(title, message, type, targetSchools);
+        if (result.success) {
+            showAlert('�� ����� ������� �����', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('sendNotificationModal'));
+            modal.hide();
+            await loadNotifications();
+        } else {
+            showAlert('��� �� ����� �������: ' + result.error, 'danger');
+        }
+    } catch (error) {
+        console.error('��� �� ����� �������:', error);
+        showAlert('��� ��� ����� ����� �������', 'danger');
+    }
+}

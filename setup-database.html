@@ -101,7 +101,6 @@
 
         <div id="alertContainer"></div>
 
-        <!-- معلومات الاتصال -->
         <div class="step-card">
             <h5><i class="bi bi-info-circle"></i> معلومات الاتصال</h5>
             <div class="row mt-3">
@@ -117,7 +116,6 @@
             </button>
         </div>
 
-        <!-- الخطوات -->
         <div class="step-card" id="step1">
             <h5><i class="bi bi-1-circle"></i> الخطوة 1: إنشاء المدارس</h5>
             <p class="text-muted">إنشاء سجلات المدارس والروضات في قاعدة البيانات</p>
@@ -160,7 +158,6 @@
             </button>
         </div>
 
-        <!-- سجل العمليات -->
         <div class="mt-4">
             <h5><i class="bi bi-terminal"></i> سجل العمليات</h5>
             <div class="log-container" id="logContainer">
@@ -172,18 +169,17 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script>
-        
+
         const supabaseUrl = CONFIG?.SUPABASE?.URL || 'https://vpvvjascwgivdjyyhzwp.supabase.co';
         const supabaseKey = CONFIG?.SUPABASE?.ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwdnZqYXNjd2dpdmRqeXloendwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4MDYxMjYsImV4cCI6MjA2NTM4MjEyNn0.6AR2-MG4x9ugNTXe9jUqx-IwGEtj1m6MCYwQkTsSbUQ';
-        
+
         if (!supabaseKey) {
             console.error('خطأ: ANON_KEY غير موجود في config.js');
             addLog('✗ خطأ: ANON_KEY غير موجود في config.js', 'error');
         }
-        
+
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        
         function addLog(message, type = 'info') {
             const logContainer = document.getElementById('logContainer');
             const timestamp = new Date().toLocaleTimeString('ar');
@@ -192,11 +188,10 @@
             logContainer.scrollTop = logContainer.scrollHeight;
         }
 
-        
         function showResult(stepId, success, message) {
             const stepCard = document.getElementById(stepId);
             const resultDiv = document.getElementById(stepId + 'Result');
-            
+
             if (success) {
                 stepCard.classList.add('completed');
                 resultDiv.innerHTML = `<div class="alert alert-success mb-0">${message}</div>`;
@@ -206,14 +201,13 @@
             }
         }
 
-        
         async function testConnection() {
             addLog('جاري اختبار الاتصال...', 'info');
             try {
                 const { data, error } = await supabase.from('schools').select('count').limit(1);
-                
+
                 if (error) throw error;
-                
+
                 document.getElementById('connectionStatus').textContent = 'متصل';
                 document.getElementById('connectionStatus').className = 'badge bg-success';
                 addLog('✓ الاتصال نجح!', 'success');
@@ -226,7 +220,6 @@
             }
         }
 
-        
         async function createSchools() {
             addLog('جاري إنشاء المدارس...', 'info');
             try {
@@ -259,12 +252,11 @@
             }
         }
 
-        
         async function createAdmin() {
             addLog('جاري إنشاء حساب رئيس مجلس الإدارة...', 'info');
             try {
-                
-                let passwordHash = 'master123'; // Fallback
+
+                let passwordHash = 'master123'; 
                 const { data: hashedPassword, error: hashError } = await supabase.rpc('hash_password', {
                     password: 'master123'
                 });
@@ -303,7 +295,6 @@
             }
         }
 
-        
         async function createSchoolUsers() {
             addLog('جاري إنشاء حسابات المدارس...', 'info');
             try {
@@ -317,8 +308,8 @@
 
                 let hasHashError = false;
                 for (const user of users) {
-                    
-                    let passwordHash = user.password; // Fallback
+
+                    let passwordHash = user.password; 
                     const { data: hashedPassword, error: hashError } = await supabase.rpc('hash_password', {
                         password: user.password
                     });
@@ -356,7 +347,6 @@
             }
         }
 
-        
         async function createSettings() {
             addLog('جاري إنشاء الإعدادات...', 'info');
             try {
@@ -394,30 +384,28 @@
             }
         }
 
-        
         async function setupAll() {
             if (!confirm('هل أنت متأكد من إعداد قاعدة البيانات بالكامل؟')) {
                 return;
             }
 
             addLog('=== بدء الإعداد التلقائي ===', 'info');
-            
+
             await createSchools();
             await new Promise(resolve => setTimeout(resolve, 500));
-            
+
             await createAdmin();
             await new Promise(resolve => setTimeout(resolve, 500));
-            
+
             await createSchoolUsers();
             await new Promise(resolve => setTimeout(resolve, 500));
-            
+
             await createSettings();
-            
+
             addLog('=== اكتمل الإعداد ===', 'success');
             showAlert('تم إعداد قاعدة البيانات بنجاح!', 'success');
         }
 
-        
         function showAlert(message, type = 'info') {
             const alertContainer = document.getElementById('alertContainer');
             alertContainer.innerHTML = `
@@ -435,11 +423,9 @@
             }, 5000);
         }
 
-        
         window.addEventListener('DOMContentLoaded', () => {
             testConnection();
         });
     </script>
 </body>
 </html>
-
