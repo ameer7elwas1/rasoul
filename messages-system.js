@@ -4,6 +4,7 @@ async function showMessages() {
             showAlert('لم يتم تحديد المدرسة', 'danger');
             return;
         }
+        // جلب المدارس بدون عمود type غير الموجود
         const { data: schools, error: schoolsError } = await supabase
             .from('schools')
             .select('id, name, code')
