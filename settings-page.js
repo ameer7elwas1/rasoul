@@ -62,7 +62,7 @@ async function loadSettings() {
                     <div class="col-md-6">
                         <div class="card mb-4">
                             <div class="card-header bg-info text-white">
-                                <h5 class="mb-0">������� ������</h5>
+                                <h5 class="mb-0">إعدادات واتساب</h5>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
@@ -90,7 +90,7 @@ async function loadSettings() {
                     <div class="col-md-6">
                         <div class="card mb-4">
                             <div class="card-header bg-warning text-white">
-                                <h5 class="mb-0">������� ������</h5>
+                                <h5 class="mb-0">إعدادات الأمان</h5>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
@@ -125,7 +125,7 @@ async function loadSettings() {
                             <input type="text" class="form-control" value="${currentSchool?.name || ''}" disabled>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">اسم المدرسة</label>
+                            <label class="form-label">رمز المدرسة</label>
                             <input type="text" class="form-control" value="${currentSchool?.code || ''}" disabled>
                         </div>
                         <div class="mb-3">
