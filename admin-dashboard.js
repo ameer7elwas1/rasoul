@@ -44,43 +44,88 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-function showSection(sectionId) {
-    document.querySelectorAll('.content-section').forEach(section => {
-        section.classList.remove('active');
-    });
+function showSection(sectionId, clickedElement) {
+    try {
+        // إخفاء جميع الأقسام
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.remove('active');
+        });
 
-    document.getElementById(sectionId).classList.add('active');
+        // إظهار القسم المطلوب
+        const targetSection = document.getElementById(sectionId);
+        if (!targetSection) {
+            console.error(`القسم ${sectionId} غير موجود`);
+            showAlert('القسم المطلوب غير موجود', 'warning');
+            return;
+        }
+        targetSection.classList.add('active');
 
-    document.querySelectorAll('.sidebar-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    event.target.classList.add('active');
+        // تحديث حالة القائمة الجانبية
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        if (clickedElement) {
+            clickedElement.classList.add('active');
+        } else {
+            // البحث عن العنصر المناسب في القائمة الجانبية
+            const sidebarItem = document.querySelector(`[onclick*="${sectionId}"]`);
+            if (sidebarItem) {
+                sidebarItem.classList.add('active');
+            }
+        }
 
-    if (sectionId === 'students') {
-        loadAllStudents();
-    } else if (sectionId === 'messages') {
-        loadConversations();
-    } else if (sectionId === 'notifications') {
-        loadNotifications();
-    } else if (sectionId === 'users') {
-        loadUsersSection();
-    } else if (sectionId === 'reports') {
-        loadReports();
-    } else if (sectionId === 'settings') {
-        loadSettings();
+        // تحميل البيانات حسب القسم
+        switch(sectionId) {
+            case 'students':
+                loadAllStudents();
+                break;
+            case 'messages':
+                loadConversations();
+                break;
+            case 'notifications':
+                loadNotifications();
+                break;
+            case 'users':
+                loadUsersSection();
+                break;
+            case 'reports':
+                loadReports();
+                break;
+            case 'settings':
+                loadSettings();
+                break;
+            case 'dashboard':
+                loadDashboardStats();
+                break;
+            case 'schools':
+                loadSchools();
+                break;
+        }
+    } catch (error) {
+        console.error('خطأ في عرض القسم:', error);
+        showAlert('حدث خطأ أثناء عرض القسم', 'danger');
     }
 }
 
 async function loadDashboardStats() {
+    const loadingDiv = showLoading('جاري تحميل الإحصائيات...');
     try {
         const { data: schools, error } = await supabase
             .from('schools')
             .select('*')
             .eq('is_active', true);
 
-        if (error) throw error;
+        if (error) {
+            console.error('خطأ في تحميل المدارس:', error);
+            throw new Error(`خطأ في تحميل المدارس: ${error.message || 'خطأ غير معروف'}`);
+        }
 
         const statsContainer = document.getElementById('schoolsStats');
+        if (!statsContainer) {
+            console.error('عنصر schoolsStats غير موجود');
+            return;
+        }
         statsContainer.innerHTML = '';
 
         for (const school of schools) {
@@ -154,8 +199,19 @@ async function loadDashboardStats() {
             `;
             statsContainer.appendChild(statCard);
         }
+        
+        if (schools.length === 0) {
+            statsContainer.innerHTML = '<div class="col-12"><div class="alert alert-info text-center">لا توجد مدارس مسجلة</div></div>';
+        }
     } catch (error) {
         console.error('خطأ في تحميل الإحصائيات:', error);
+        const statsContainer = document.getElementById('schoolsStats');
+        if (statsContainer) {
+            statsContainer.innerHTML = `<div class="col-12"><div class="alert alert-danger">خطأ في تحميل الإحصائيات: ${error.message || 'خطأ غير معروف'}</div></div>`;
+        }
+        showAlert('خطأ في تحميل الإحصائيات', 'danger');
+    } finally {
+        hideLoading();
     }
 }
 
@@ -207,8 +263,8 @@ function openSchool(schoolId) {
 }
 
 async function loadAllStudents() {
+    const loadingDiv = showLoading('جاري تحميل الطلاب...');
     try {
-
         const { data, error } = await supabase
             .from('students')
             .select('*')
@@ -216,7 +272,10 @@ async function loadAllStudents() {
             .order('created_at', { ascending: false })
             .limit(500);
 
-        if (error) throw error;
+        if (error) {
+            console.error('خطأ في تحميل الطلاب:', error);
+            throw new Error(`خطأ في تحميل الطلاب: ${error.message || 'خطأ غير معروف'}`);
+        }
 
         const { data: schoolsData } = await supabase
             .from('schools')
@@ -242,7 +301,13 @@ async function loadAllStudents() {
         displayAllStudents(studentsData);
     } catch (error) {
         console.error('خطأ في تحميل الطلاب:', error);
+        const tbody = document.getElementById('allStudentsTableBody');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">خطأ في تحميل الطلاب: ${error.message || 'خطأ غير معروف'}</td></tr>`;
+        }
         showAlert('خطأ في تحميل الطلاب', 'danger');
+    } finally {
+        hideLoading();
     }
 }
 
@@ -733,16 +798,84 @@ function logout() {
 }
 
 function showAlert(message, type = 'info') {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
-    alertDiv.style.zIndex = '9999';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(alertDiv);
+    try {
+        // إزالة أي تنبيهات سابقة
+        const existingAlerts = document.querySelectorAll('.custom-alert');
+        existingAlerts.forEach(alert => alert.remove());
 
-    setTimeout(() => {
-        alertDiv.remove();
-    }, 5000);
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed custom-alert`;
+        alertDiv.style.cssText = `
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99999;
+            min-width: 300px;
+            max-width: 90%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            animation: slideDown 0.3s ease-out;
+        `;
+        
+        const icons = {
+            'success': '<i class="bi bi-check-circle-fill"></i>',
+            'danger': '<i class="bi bi-exclamation-triangle-fill"></i>',
+            'warning': '<i class="bi bi-exclamation-circle-fill"></i>',
+            'info': '<i class="bi bi-info-circle-fill"></i>'
+        };
+        
+        alertDiv.innerHTML = `
+            <div class="d-flex align-items-center">
+                <span class="me-2">${icons[type] || icons.info}</span>
+                <span class="flex-grow-1">${message}</span>
+                <button type="button" class="btn-close ms-2" onclick="this.closest('.custom-alert').remove()"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(alertDiv);
+
+        // إزالة تلقائية بعد 5 ثوانٍ
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.style.transition = 'opacity 0.3s';
+                alertDiv.style.opacity = '0';
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
+    } catch (error) {
+        console.error('خطأ في عرض التنبيه:', error);
+        alert(message); // Fallback
+    }
+}
+
+function showLoading(message = 'جاري التحميل...') {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'globalLoading';
+    loadingDiv.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
+    loadingDiv.style.cssText = `
+        background: rgba(0,0,0,0.5);
+        z-index: 99998;
+        backdrop-filter: blur(2px);
+    `;
+    loadingDiv.innerHTML = `
+        <div class="text-center bg-white p-4 rounded shadow-lg">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">جاري التحميل...</span>
+            </div>
+            <div class="text-dark fw-bold">${message}</div>
+        </div>
+    `;
+    document.body.appendChild(loadingDiv);
+    return loadingDiv;
+}
+
+function hideLoading() {
+    const loadingDiv = document.getElementById('globalLoading');
+    if (loadingDiv) {
+        loadingDiv.remove();
+    }
 }

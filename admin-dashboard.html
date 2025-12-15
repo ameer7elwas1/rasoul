@@ -258,6 +258,41 @@
             font-size: 11px;
             font-weight: 700;
         }
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+        .custom-alert {
+            animation: slideDown 0.3s ease-out;
+        }
+        .main-content {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .btn {
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
@@ -281,28 +316,28 @@
 
             <div class="col-md-2 p-0">
                 <div class="sidebar">
-                    <a href="#" class="sidebar-item active" onclick="showSection('dashboard')">
+                    <a href="#" class="sidebar-item active" onclick="showSection('dashboard', this); return false;">
                         <i class="bi bi-speedometer2"></i> لوحة التحكم
                     </a>
-                    <a href="#" class="sidebar-item" onclick="showSection('schools')">
+                    <a href="#" class="sidebar-item" onclick="showSection('schools', this); return false;">
                         <i class="bi bi-building"></i> المدارس
                     </a>
-                    <a href="#" class="sidebar-item" onclick="showSection('students')">
+                    <a href="#" class="sidebar-item" onclick="showSection('students', this); return false;">
                         <i class="bi bi-people-fill"></i> جميع الطلاب
                     </a>
-                    <a href="#" class="sidebar-item" onclick="showSection('messages')">
+                    <a href="#" class="sidebar-item" onclick="showSection('messages', this); return false;">
                         <i class="bi bi-chat-dots-fill"></i> المحادثات
                     </a>
-                    <a href="#" class="sidebar-item" onclick="showSection('notifications')">
+                    <a href="#" class="sidebar-item" onclick="showSection('notifications', this); return false;">
                         <i class="bi bi-bell-fill"></i> الإشعارات
                     </a>
-                    <a href="#" class="sidebar-item" onclick="showSection('reports')">
+                    <a href="#" class="sidebar-item" onclick="showSection('reports', this); return false;">
                         <i class="bi bi-graph-up"></i> التقارير
                     </a>
-                    <a href="#" class="sidebar-item" onclick="showSection('users')">
+                    <a href="#" class="sidebar-item" onclick="showSection('users', this); return false;">
                         <i class="bi bi-people-fill"></i> إدارة المستخدمين
                     </a>
-                    <a href="#" class="sidebar-item" onclick="showSection('settings')">
+                    <a href="#" class="sidebar-item" onclick="showSection('settings', this); return false;">
                         <i class="bi bi-gear-fill"></i> الإعدادات
                     </a>
                 </div>

@@ -257,6 +257,41 @@
                 font-size: 0.9rem;
             }
         }
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+        .custom-alert {
+            animation: slideDown 0.3s ease-out;
+        }
+        .main-content {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .btn {
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
@@ -295,22 +330,22 @@
 
             <div class="col-md-2 p-0">
                 <div class="sidebar">
-                    <a href="#" class="sidebar-item active" onclick="showSection('dashboard')">
+                    <a href="#" class="sidebar-item active" onclick="showSection('dashboard', this); return false;">
                         <i class="bi bi-speedometer2"></i> لوحة التحكم
                     </a>
-                    <a href="#" class="sidebar-item" onclick="showSection('students')">
+                    <a href="#" class="sidebar-item" onclick="showSection('students', this); return false;">
                         <i class="bi bi-people-fill"></i> الطلاب
                     </a>
-                    <a href="#" class="sidebar-item" onclick="showSection('installments')">
+                    <a href="#" class="sidebar-item" onclick="showSection('installments', this); return false;">
                         <i class="bi bi-cash-coin"></i> الأقساط
                     </a>
-                    <a href="#" class="sidebar-item" onclick="showSection('payments')">
+                    <a href="#" class="sidebar-item" onclick="showSection('payments', this); return false;">
                         <i class="bi bi-receipt"></i> المدفوعات
                     </a>
-                    <a href="#" class="sidebar-item" onclick="showSection('reports')">
+                    <a href="#" class="sidebar-item" onclick="showSection('reports', this); return false;">
                         <i class="bi bi-graph-up"></i> التقارير
                     </a>
-                    <a href="#" class="sidebar-item" onclick="showSection('settings')">
+                    <a href="#" class="sidebar-item" onclick="showSection('settings', this); return false;">
                         <i class="bi bi-gear-fill"></i> الإعدادات
                     </a>
                 </div>

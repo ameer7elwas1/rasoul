@@ -65,38 +65,81 @@ async function loadSchoolData(schoolId) {
     }
 }
 
-window.showSection = function(sectionId) {
-    document.querySelectorAll('.content-section').forEach(section => {
-        section.classList.remove('active');
-    });
+window.showSection = function(sectionId, clickedElement) {
+    try {
+        // إخفاء جميع الأقسام
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.remove('active');
+        });
 
-    document.getElementById(sectionId).classList.add('active');
+        // إظهار القسم المطلوب
+        const targetSection = document.getElementById(sectionId);
+        if (!targetSection) {
+            console.error(`القسم ${sectionId} غير موجود`);
+            showAlert('القسم المطلوب غير موجود', 'warning');
+            return;
+        }
+        targetSection.classList.add('active');
 
-    document.querySelectorAll('.sidebar-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    event.target.classList.add('active');
+        // تحديث حالة القائمة الجانبية
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        if (clickedElement) {
+            clickedElement.classList.add('active');
+        } else {
+            // البحث عن العنصر المناسب في القائمة الجانبية
+            const sidebarItem = document.querySelector(`[onclick*="${sectionId}"]`);
+            if (sidebarItem) {
+                sidebarItem.classList.add('active');
+            }
+        }
 
-    if (sectionId === 'students') {
-        loadStudents();
-    } else if (sectionId === 'payments') {
-        loadPayments();
-    } else if (sectionId === 'reports') {
-        loadReports();
-    } else if (sectionId === 'settings') {
-        loadSettings();
+        // تحميل البيانات حسب القسم
+        switch(sectionId) {
+            case 'students':
+                loadStudents();
+                break;
+            case 'payments':
+                loadPayments();
+                break;
+            case 'reports':
+                loadReports();
+                break;
+            case 'settings':
+                loadSettings();
+                break;
+            case 'dashboard':
+                loadDashboardStats();
+                break;
+            case 'installments':
+                // لا يحتاج تحميل تلقائي
+                break;
+        }
+    } catch (error) {
+        console.error('خطأ في عرض القسم:', error);
+        showAlert('حدث خطأ أثناء عرض القسم', 'danger');
     }
 }
 
 async function loadDashboardStats() {
     try {
+        if (!currentSchool || !currentSchool.id) {
+            console.error('المدرسة غير محددة');
+            return;
+        }
+
         const { data: students, error } = await supabase
             .from('students')
             .select('*')
             .eq('school_id', currentSchool.id)
             .eq('is_active', true);
 
-        if (error) throw error;
+        if (error) {
+            console.error('خطأ في تحميل الطلاب:', error);
+            throw new Error(`خطأ في تحميل الطلاب: ${error.message || 'خطأ غير معروف'}`);
+        }
 
         let totalStudents = students.length;
         let paidStudents = 0;
@@ -130,16 +173,26 @@ async function loadDashboardStats() {
         document.getElementById('paidStudents').textContent = paidStudents;
         document.getElementById('partialStudents').textContent = partialStudents;
         document.getElementById('unpaidStudents').textContent = unpaidStudents;
-        document.getElementById('totalFees').textContent = Utils.formatCurrency(totalFees);
-        document.getElementById('remainingFees').textContent = Utils.formatCurrency(totalFees - totalPaid);
+        const totalFeesEl = document.getElementById('totalFees');
+        const remainingFeesEl = document.getElementById('remainingFees');
+        
+        if (totalFeesEl) totalFeesEl.textContent = Utils.formatCurrency(totalFees);
+        if (remainingFeesEl) remainingFeesEl.textContent = Utils.formatCurrency(totalFees - totalPaid);
 
     } catch (error) {
         console.error('خطأ في تحميل الإحصائيات:', error);
+        showAlert('خطأ في تحميل الإحصائيات: ' + (error.message || 'خطأ غير معروف'), 'danger');
     }
 }
 
 async function loadStudents() {
     try {
+        if (!currentSchool || !currentSchool.id) {
+            console.error('المدرسة غير محددة');
+            showAlert('المدرسة غير محددة', 'warning');
+            return;
+        }
+
         const { data, error } = await supabase
             .from('students')
             .select('*')
@@ -147,13 +200,20 @@ async function loadStudents() {
             .eq('is_active', true)
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error('خطأ في تحميل الطلاب:', error);
+            throw new Error(`خطأ في تحميل الطلاب: ${error.message || 'خطأ غير معروف'}`);
+        }
 
         studentsData = data || [];
         displayStudents(studentsData);
     } catch (error) {
         console.error('خطأ في تحميل الطلاب:', error);
-        showAlert('خطأ في تحميل الطلاب', 'danger');
+        const tbody = document.getElementById('studentsTableBody');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">خطأ في تحميل الطلاب: ${error.message || 'خطأ غير معروف'}</td></tr>`;
+        }
+        showAlert('خطأ في تحميل الطلاب: ' + (error.message || 'خطأ غير معروف'), 'danger');
     }
 }
 
@@ -507,16 +567,84 @@ window.logout = function() {
 }
 
 window.showAlert = function(message, type = 'info') {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
-    alertDiv.style.zIndex = '9999';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(alertDiv);
+    try {
+        // إزالة أي تنبيهات سابقة
+        const existingAlerts = document.querySelectorAll('.custom-alert');
+        existingAlerts.forEach(alert => alert.remove());
 
-    setTimeout(() => {
-        alertDiv.remove();
-    }, 5000);
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed custom-alert`;
+        alertDiv.style.cssText = `
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99999;
+            min-width: 300px;
+            max-width: 90%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            animation: slideDown 0.3s ease-out;
+        `;
+        
+        const icons = {
+            'success': '<i class="bi bi-check-circle-fill"></i>',
+            'danger': '<i class="bi bi-exclamation-triangle-fill"></i>',
+            'warning': '<i class="bi bi-exclamation-circle-fill"></i>',
+            'info': '<i class="bi bi-info-circle-fill"></i>'
+        };
+        
+        alertDiv.innerHTML = `
+            <div class="d-flex align-items-center">
+                <span class="me-2">${icons[type] || icons.info}</span>
+                <span class="flex-grow-1">${message}</span>
+                <button type="button" class="btn-close ms-2" onclick="this.closest('.custom-alert').remove()"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(alertDiv);
+
+        // إزالة تلقائية بعد 5 ثوانٍ
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.style.transition = 'opacity 0.3s';
+                alertDiv.style.opacity = '0';
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
+    } catch (error) {
+        console.error('خطأ في عرض التنبيه:', error);
+        alert(message); // Fallback
+    }
+}
+
+function showLoading(message = 'جاري التحميل...') {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'globalLoading';
+    loadingDiv.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
+    loadingDiv.style.cssText = `
+        background: rgba(0,0,0,0.5);
+        z-index: 99998;
+        backdrop-filter: blur(2px);
+    `;
+    loadingDiv.innerHTML = `
+        <div class="text-center bg-white p-4 rounded shadow-lg">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">جاري التحميل...</span>
+            </div>
+            <div class="text-dark fw-bold">${message}</div>
+        </div>
+    `;
+    document.body.appendChild(loadingDiv);
+    return loadingDiv;
+}
+
+function hideLoading() {
+    const loadingDiv = document.getElementById('globalLoading');
+    if (loadingDiv) {
+        loadingDiv.remove();
+    }
 }
